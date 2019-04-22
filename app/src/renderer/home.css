@@ -1,0 +1,14 @@
+.home {
+  background: linear-gradient(45deg, rgb(0, 120, 215), rgb(93, 169,228));
+}
+
+.home .open {
+  outline: none;
+  background: transparent;
+  border: none;
+  font-size: 30px;
+  font-weight: bold;
+  color: #eee;
+  padding: 20px;
+  cursor: pointer;
+}

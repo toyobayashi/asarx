@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react",
+    "experimentalDecorators": true,
+    "target": "es2017",
+    "module": "esNext",
+    "sourceMap": true
+  },
+  "include": [
+    "./src/**/*"
+  ]
+}
