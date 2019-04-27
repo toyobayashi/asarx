@@ -9,7 +9,7 @@ export default {
 
   distPath: getPath('..', 'dist'),
   iconOutDir: 'img',
-  iconSrcDir: getPath('res'),
+  iconSrcDir: getPath('res', 'icon'),
 
   statsOptions: {
     colors: true,

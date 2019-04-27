@@ -3,8 +3,7 @@ import { connect } from 'react-redux'
 import { withRouter, RouteComponentProps } from 'react-router-dom'
 import { AppState, setAsarPath, AppAction } from './store'
 import { Dispatch } from 'redux'
-import { readAsarHeader } from './api'
-// import { join } from 'path'
+import Asar from './asar'
 
 interface Props extends RouteComponentProps {
   asarPath?: string
@@ -17,6 +16,8 @@ interface State {
 }
 
 class Detail extends React.Component<Props, State> {
+  private _asar: Asar = new Asar()
+
   render () {
     const { location, history } = this.props
 
@@ -47,10 +48,43 @@ class Detail extends React.Component<Props, State> {
     this.setState({ tree: '' })
   }
 
-  async readHeader () {
+  readHeader () {
     if (this.props.asarPath) {
-      const header = await readAsarHeader(this.props.asarPath)
-      this.setState({ tree: JSON.stringify(header, null, 2) })
+      this._asar.load(this.props.asarPath)
+      this.setState({ tree: JSON.stringify(this._asar.header, null, 2) })
+    } else {
+      this.setState({ tree: JSON.stringify({
+        files: {
+          folder1: {
+            files: {
+              file1: {
+                size: 80,
+                offset: '0'
+              },
+              file2: {
+                size: 40,
+                offset: '80'
+              },
+              file3: {
+                size: 233,
+                unpacked: true
+              }
+            }
+          },
+          folder2: {
+            files: {
+              file4: {
+                size: 20,
+                offset: '120'
+              }
+            }
+          },
+          file5: {
+            size: 100,
+            offset: '140'
+          }
+        }
+      }, null, 2) })
     }
   }
 }

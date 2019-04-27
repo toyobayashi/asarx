@@ -32,7 +32,7 @@ class Home extends React.Component<Props, States> {
   onDrop (e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault()
     e.stopPropagation()
-    this.goDetail((e.dataTransfer as DataTransfer).files[0].path)
+    this.goDetail((e.dataTransfer).files[0].path)
     // this.handleDrop(e.dataTransfer.files)
   }
 

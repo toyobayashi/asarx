@@ -20,7 +20,7 @@ function createWindow () {
   if ((process as any).isLinux) {
     let linuxIcon: string
     try {
-      linuxIcon = require(`../res/1024x1024.png`)
+      linuxIcon = require(`../res/icon/1024x1024.png`)
     } catch (_) {
       linuxIcon = ''
     }
@@ -31,7 +31,7 @@ function createWindow () {
     if (process.env.NODE_ENV !== 'production') {
       let icon: string = ''
 
-      const iconPath = join(__dirname, `../res/app.${process.platform === 'win32' ? 'ico' : 'icns'}`)
+      const iconPath = join(__dirname, `../res/icon/app.${process.platform === 'win32' ? 'ico' : 'icns'}`)
       if (existsSync(iconPath)) icon = iconPath
 
       if (icon) {
