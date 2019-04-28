@@ -4,6 +4,7 @@ import { withRouter, RouteComponentProps } from 'react-router-dom'
 import { AppState, setAsarPath, AppAction } from './store'
 import { Dispatch } from 'redux'
 import Asar from './asar'
+import Tree from './Tree'
 
 interface Props extends RouteComponentProps {
   asarPath?: string
@@ -12,7 +13,7 @@ interface Props extends RouteComponentProps {
 }
 
 interface State {
-  tree: string
+  tree: AsarNode
 }
 
 class Detail extends React.Component<Props, State> {
@@ -26,7 +27,9 @@ class Detail extends React.Component<Props, State> {
         <button onClick={() => history.goBack()}>back</button>
         {location.pathname}, {this.props.asarPath}
         <hr />
-        <pre style={{ width: '100%',wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{this.state.tree}</pre>
+        <Tree data={this.state.tree} title={this.props.asarPath} />
+        <hr />
+        <pre style={{ width: '100%',wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{JSON.stringify(this.state.tree, null, 2)}</pre>
       </div>
     )
   }
@@ -35,7 +38,7 @@ class Detail extends React.Component<Props, State> {
     super(props)
 
     this.state = {
-      tree: ''
+      tree: { files: {} }
     }
   }
 
@@ -45,15 +48,15 @@ class Detail extends React.Component<Props, State> {
 
   componentWillUnmount () {
     this.props.setAsarPath && this.props.setAsarPath('')
-    this.setState({ tree: '' })
+    this.setState({ tree: { files: {} } })
   }
 
   readHeader () {
     if (this.props.asarPath) {
       this._asar.load(this.props.asarPath)
-      this.setState({ tree: JSON.stringify(this._asar.header, null, 2) })
+      this.setState({ tree: this._asar.header })
     } else {
-      this.setState({ tree: JSON.stringify({
+      this.setState({ tree: {
         files: {
           folder1: {
             files: {
@@ -84,7 +87,7 @@ class Detail extends React.Component<Props, State> {
             offset: '140'
           }
         }
-      }, null, 2) })
+      } })
     }
   }
 }
