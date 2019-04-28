@@ -1,3 +1,9 @@
+declare module 'electron' {
+  interface BrowserWindow {
+    removeMenu? (): void
+  }
+}
+
 import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeImage } from 'electron'
 import { format } from 'url'
 import { join } from 'path'
@@ -7,7 +13,7 @@ import initIpc from './ipc'
 
 let mainWindow: BrowserWindow | null
 
-function createWindow () {
+async function createWindow () {
   const browerWindowOptions: BrowserWindowConstructorOptions = {
     width: 800,
     height: 600,
@@ -55,23 +61,16 @@ function createWindow () {
 
   if (process.env.NODE_ENV !== 'production') {
     const config = require('../../script/config').default
-    mainWindow.loadURL(`http://${config.devServerHost}:${config.devServerPort}${config.publicPath}`)
+    return mainWindow.loadURL(`http://${config.devServerHost}:${config.devServerPort}${config.publicPath}`)
   } else {
-    mainWindow.setMenu(null)
-    mainWindow.loadURL(format({
+    typeof mainWindow.removeMenu === 'function' ? mainWindow.removeMenu() : mainWindow.setMenu(null)
+    return mainWindow.loadURL(format({
       pathname: join(__dirname, 'index.html'),
       protocol: 'file:',
       slashes: true
     }))
   }
 }
-
-function main (_launchInfo: any): void {
-  initIpc()
-  if (!mainWindow) createWindow()
-}
-
-app.on('ready', main)
 
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') {
@@ -81,6 +80,25 @@ app.on('window-all-closed', function () {
 
 app.on('activate', function () {
   if (mainWindow === null) {
-    createWindow()
+    createWindow().catch(err => {
+      console.error(err)
+      app.quit()
+    })
   }
 })
+
+// tslint:disable-next-line: strict-type-predicates
+typeof app.whenReady === 'function' ? app.whenReady().then(main).catch(err => {
+  console.log(err)
+  app.quit()
+}) : app.on('ready', main)
+
+function main (): void {
+  initIpc()
+  if (!mainWindow) {
+    createWindow().catch(err => {
+      console.error(err)
+      process.exit(0)
+    })
+  }
+}
