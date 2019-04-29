@@ -1,3 +1,5 @@
+import './tree.css'
+
 import * as React from 'react'
 
 import generateObjectID from '../common/id'
@@ -7,6 +9,8 @@ interface State {}
 interface Props {
   title?: string
   data?: AsarNode
+  hideFile?: boolean
+  onItemClicked? (node: AsarNode | null): void
 }
 
 class Tree extends React.Component<Props, State> {
@@ -18,7 +22,7 @@ class Tree extends React.Component<Props, State> {
     const title: string = this.props.title || '/'
     const data: AsarNode = this.props.data || { files: {} }
     return (
-      <div>
+      <div className='tree'>
         {this.renderNote(title, data, 0)}
       </div>
 
@@ -33,9 +37,15 @@ class Tree extends React.Component<Props, State> {
 
   renderNote (title: string, asarNode: AsarNode, indent: number) {
     const node: AsarNode = asarNode || { files: {} }
-    let dom = [<TreeItem title={title} indent={indent} key={generateObjectID()} />]
+    let dom: JSX.Element[] = []
+    if (!this.props.hideFile) dom.push(<TreeItem title={title} data={node} indent={indent} key={generateObjectID()} onItemClicked={this.props.onItemClicked} />)
     if (node.files) {
-      dom = [...dom, ...resolveArray(Object.keys(node.files).map(item => this.renderNote(item, (node.files as any)[item], indent + 8)))]
+      if (this.props.hideFile) {
+        dom.push(<TreeItem title={title} data={node} indent={indent} key={generateObjectID()} onItemClicked={this.props.onItemClicked} />)
+      }
+      if (node._open) {
+        dom = [...dom, ...resolveArray(Object.keys(node.files).map(item => this.renderNote(item, (node.files as any)[item], indent + 8)))]
+      }
     }
     return dom
   }
@@ -49,13 +59,38 @@ function resolveArray (arr: any[]) {
   return res
 }
 
-function TreeItem (props: any) {
-  const title: string = props.title || '/'
-  // const header: AsarNode = props.data || { files: {} }
-  const indent: number = props.indent || 0
-  return (
-    <div style={{ paddingLeft: indent ? indent + 'px' : void 0 }}>{title}</div>
-  )
+class TreeItem extends React.Component<any, any> {
+  constructor (props: any) {
+    super(props)
+
+    this.onItemClicked = this.onItemClicked.bind(this)
+  }
+
+  render () {
+    const title: string = this.props.title || '/'
+    const data: AsarNode = this.props.data || null
+    const indent: number = this.props.indent || 0
+
+    const className = ['tree-item']
+    if (data._active) {
+      className.push('active')
+    }
+
+    return (
+      <div
+        onClick={this.onItemClicked}
+        className={className.join(' ')}
+        style={{ paddingLeft: indent ? indent + 'px' : void 0 }}
+      >{title}</div>
+    )
+  }
+
+  onItemClicked (_e: React.MouseEvent) {
+    const onItemClicked: undefined | ((node: AsarNode | null) => void) = this.props.onItemClicked
+    if (onItemClicked) {
+      onItemClicked(this.props.data || null)
+    }
+  }
 }
 
 export default Tree

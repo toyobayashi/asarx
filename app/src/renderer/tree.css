@@ -1,0 +1,20 @@
+/* .tree {
+  background-color: rgb(243, 243, 243);
+} */
+
+.tree-item {
+  font-size: 13px;
+  height: 22px;
+  line-height: 22px;
+  color: #616161;
+  cursor: pointer;
+}
+
+.tree-item:hover {
+  background: #e8e8e8;
+}
+
+.tree-item.active, .tree-item.active:hover {
+  background: #126ce1;
+  color: #fff;
+}

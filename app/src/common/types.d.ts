@@ -1,4 +1,7 @@
 declare interface AsarNode {
+  _open?: boolean
+  _active?: boolean
+  _path?: string
   files?: {
     [item: string]: AsarNode
   }

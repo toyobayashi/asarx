@@ -1,0 +1,15 @@
+.content {
+  display: flex;
+  justify-content: space-between;
+  height: calc(100% - 30px);
+}
+
+.tree-view {
+  flex: 1;
+  background-color: rgb(243, 243, 243);
+}
+
+.list-view {
+  flex: 3;
+  overflow: auto;
+}
