@@ -32,6 +32,8 @@ export interface AppAction<T = any> extends Action<ActionType> {
   value?: T
 }
 
+let lastClickedItemIndex = -1
+
 const data: AppState = {
   asarPath: '',
   tree: { files: {} },
@@ -173,11 +175,39 @@ function reducer (state: AppState = data, action: AppAction): AppState {
     }
     case ActionType.CLICK_LIST: {
       const listItem = action.value
-      for (let i = 0; i < state.list.length; i++) {
-        if (state.list[i] === listItem) {
-          state.list[i].focused = true
-        } else {
-          state.list[i].focused = false
+
+      if (state.shiftDown) {
+        let index = -1
+        for (let i = 0; i < state.list.length; i++) {
+          if (state.list[i] === listItem) {
+            index = i
+          }
+        }
+
+        if (index !== lastClickedItemIndex && lastClickedItemIndex !== -1) {
+          let start = index < lastClickedItemIndex ? index : lastClickedItemIndex
+          let end = index < lastClickedItemIndex ? lastClickedItemIndex : index
+
+          for (let i = 0; i < state.list.length; i++) {
+            if (i <= end && i >= start) state.list[i].focused = true
+            else state.list[i].focused = false
+          }
+        }
+      } else if (state.controllDown) {
+        for (let i = 0; i < state.list.length; i++) {
+          if (state.list[i] === listItem) {
+            state.list[i].focused = true
+            lastClickedItemIndex = i
+          }
+        }
+      } else {
+        for (let i = 0; i < state.list.length; i++) {
+          if (state.list[i] === listItem) {
+            state.list[i].focused = true
+            lastClickedItemIndex = i
+          } else {
+            state.list[i].focused = false
+          }
         }
       }
 
@@ -204,13 +234,11 @@ function reducer (state: AppState = data, action: AppAction): AppState {
       }, '/')
 
       if (!listItem.node) {
-
-        console.log(currentDir)
-        console.log(dirname(currentDir))
         currentDir = dirname(currentDir).replace(/\\/g, '/')
         const cdNode = Asar.getNode(state.tree, currentDir)
         if (!cdNode) return state
         const { tree, list } = _clickTree(cdNode, state.tree)
+        lastClickedItemIndex = -1
         return {
           ...state,
           list,

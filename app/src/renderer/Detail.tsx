@@ -41,13 +41,17 @@ class Detail extends React.Component<Props, State> {
           <div className='tree-view'>
             <Tree data={this.props.tree} title={this.props.asarPath} hideFile={true} onItemClicked={this._onItemClicked} />
           </div>
-          <div className='list-view'>
+          <div className='list-view' onClick={this._clearListFocus}>
             <FileList onItemClicked={this._onListItemClicked} onItemDoubleClicked={this._onListItemDoubleClicked} />
             {/* <pre style={{ width: '100%',wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{JSON.stringify(this.props.tree, null, 2)}</pre> */}
           </div>
         </div>
       </div>
     )
+  }
+
+  private _clearListFocus (_e: React.MouseEvent) {
+    this.props.clickList && this.props.clickList(null)
   }
 
   private get _activePath (): string {
@@ -98,6 +102,7 @@ class Detail extends React.Component<Props, State> {
     this._onListItemDoubleClicked = this._onListItemDoubleClicked.bind(this)
     this._onKeyDown = this._onKeyDown.bind(this)
     this._onKeyUp = this._onKeyUp.bind(this)
+    this._clearListFocus = this._clearListFocus.bind(this)
   }
 
   private _onKeyDown (e: KeyboardEvent) {

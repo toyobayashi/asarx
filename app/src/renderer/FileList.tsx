@@ -163,7 +163,7 @@ class FileListItem extends React.Component<FileListItemProps> {
     this._onClick = this._onClick.bind(this)
   }
 
-  private _onClick (_e: React.MouseEvent) {
+  private _onClick (e: React.MouseEvent) {
     const data = this.props.data as ListItem
     this.props.onClick && this.props.onClick(data)
 
@@ -181,6 +181,8 @@ class FileListItem extends React.Component<FileListItemProps> {
         FileListItem.clickItemPath = data.path
       }
     }
+
+    e.stopPropagation()
   }
 }
 
