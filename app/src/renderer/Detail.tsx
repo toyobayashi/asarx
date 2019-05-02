@@ -2,10 +2,11 @@ import './detail.css'
 import * as React from 'react'
 import { connect } from 'react-redux'
 import { withRouter, RouteComponentProps } from 'react-router-dom'
-import { AppState, setAsarPath, AppAction, setTree, clearTree, updateTree } from './store'
+import { AppState, setAsarPath, AppAction, setTree, clearTree, clickTree, clickList } from './store'
 import { Dispatch } from 'redux'
 import Asar from './asar'
 import Tree from './Tree'
+import FileList from './FileList'
 
 interface Props extends RouteComponentProps {
   asarPath?: string
@@ -14,7 +15,8 @@ interface Props extends RouteComponentProps {
 
   setAsarPath? (path: string): AppAction<string>
   setTree? (tree: AsarNode): AppAction<AsarNode>
-  updateTree? (tree: AsarNode): AppAction<AsarNode>
+  clickTree? (tree: AsarNode): AppAction<AsarNode>
+  clickList? (tree: AsarNode | null): AppAction<AsarNode | null>
   clearTree? (): AppAction<void>
 }
 
@@ -30,21 +32,22 @@ class Detail extends React.Component<Props, State> {
       <div className='full-screen'>
         <div style={{ height: '29px', borderBottom: '1px solid #333' }}>
           <button onClick={() => history.goBack()}>back</button>
-          {location.pathname}, {this.props.asarPath}, {this._focusedPath}
+          {location.pathname}, {this.props.asarPath}, {this._activePath}
         </div>
         <div className='content'>
           <div className='tree-view'>
             <Tree data={this.props.tree} title={this.props.asarPath} hideFile={true} onItemClicked={this._onItemClicked} />
           </div>
           <div className='list-view'>
-            <pre style={{ width: '100%',wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{JSON.stringify(this.props.tree, null, 2)}</pre>
+            <FileList data={this._activeNode} cdDotDot={this._activePath !== '/'} onItemClicked={this._onListItemClicked} onItemDoubleClicked={this._onListItemDoubleClicked} />
+            {/* <pre style={{ width: '100%',wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{JSON.stringify(this.props.tree, null, 2)}</pre> */}
           </div>
         </div>
       </div>
     )
   }
 
-  private get _focusedPath (): string {
+  private get _activePath (): string {
     let res = ''
     Asar.each(this.props.tree as AsarNode, (n, path) => {
       if (n._active) {
@@ -56,10 +59,33 @@ class Detail extends React.Component<Props, State> {
     return res.replace(/\\/g, '/')
   }
 
+  private get _activeNode (): AsarNode | undefined {
+    let res
+    Asar.each(this.props.tree as AsarNode, (n) => {
+      if (n._active) {
+        res = n
+        return true
+      }
+      return false
+    })
+    return res
+  }
+
   private _onItemClicked (node: AsarNode | null) {
     if (node) {
-      this.props.updateTree && this.props.updateTree(node)
+      this.props.clickTree && this.props.clickTree(node)
     }
+    console.log(node)
+  }
+
+  private _onListItemClicked (node: AsarNode | null) {
+    // if (node) {
+    this.props.clickList && this.props.clickList(node)
+    // }
+    console.log(node)
+  }
+
+  private _onListItemDoubleClicked (node: AsarNode | null) {
     console.log(node)
   }
 
@@ -67,6 +93,8 @@ class Detail extends React.Component<Props, State> {
     super(props)
 
     this._onItemClicked = this._onItemClicked.bind(this)
+    this._onListItemClicked = this._onListItemClicked.bind(this)
+    this._onListItemDoubleClicked = this._onListItemDoubleClicked.bind(this)
   }
 
   componentDidMount () {
@@ -128,7 +156,8 @@ export default withRouter(connect(
     dispatch,
     setAsarPath: (path: string) => dispatch(setAsarPath(path)),
     setTree: (tree: AsarNode) => dispatch(setTree(tree)),
-    updateTree: (tree: AsarNode) => dispatch(updateTree(tree)),
+    clickTree: (tree: AsarNode) => dispatch(clickTree(tree)),
+    clickList: (tree: AsarNode | null) => dispatch(clickList(tree)),
     clearTree: () => dispatch(clearTree())
   })
 )(Detail))

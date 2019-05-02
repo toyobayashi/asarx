@@ -1,0 +1,68 @@
+.file-list {
+  width: 100%;
+  font-size: 14px;
+  border: none;
+  position: relative;
+  height: 100%;
+  overflow: auto;
+}
+
+.file-list.resize {
+  cursor: ew-resize;
+}
+
+.file-list .head {
+  display: flex;
+  width: 100%;
+  position: absolute;
+  top: 0;
+}
+
+.file-list .body {
+  margin-top: 24px;
+  height: calc(100% - 24px);
+  overflow: auto;
+}
+
+.file-list .row {
+  display: flex;
+}
+.file-list .body .row:hover {
+  background: rgb(229, 243, 255);
+}
+
+.file-list .row.focused, .file-list .row.focused:hover {
+  background: rgb(204, 232, 255);
+}
+
+.file-list .name-column {
+  text-align: left;
+}
+
+.file-list .size-column {
+  text-align: right;
+}
+
+.file-list .cell {
+  /* border-right: 1px solid rgb(235, 244, 254); */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  padding: 0 5px;
+  height: 22px;
+  line-height: 22px;
+}
+
+.file-list .head .cell {
+  height: 24px;
+  line-height: 24px;
+}
+
+.file-list .resize {
+  width: 4px;
+  height: 100%;
+  position: absolute;
+  cursor: ew-resize;
+  top: 0;
+  border-right: 1px solid rgb(235, 244, 254);
+}

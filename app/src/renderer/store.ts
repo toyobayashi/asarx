@@ -10,7 +10,8 @@ export interface AppState {
 export enum ActionType {
   SET_ASAR_PATH,
   SET_TREE,
-  UPDATE_TREE,
+  CLICK_TREE,
+  CLICK_LIST,
   CLEAR_TREE
 }
 
@@ -37,9 +38,16 @@ export function setTree (value: AsarNode): AppAction<AsarNode> {
   }
 }
 
-export function updateTree (value: AsarNode): AppAction<AsarNode> {
+export function clickTree (value: AsarNode): AppAction<AsarNode> {
   return {
-    type: ActionType.UPDATE_TREE,
+    type: ActionType.CLICK_TREE,
+    value
+  }
+}
+
+export function clickList (value: AsarNode | null): AppAction<AsarNode | null> {
+  return {
+    type: ActionType.CLICK_LIST,
     value
   }
 }
@@ -62,11 +70,12 @@ function reducer (state: AppState = data, action: AppAction): AppState {
         ...state,
         tree: action.value
       }
-    case ActionType.UPDATE_TREE:
+    case ActionType.CLICK_TREE: {
       const node = action.value
       const prevTree = state.tree
       Asar.each(prevTree, (n) => {
         n._active = false
+        n._focused = false
         if (n === node) {
           if (n.files) {
             n._open = !n._open
@@ -78,6 +87,21 @@ function reducer (state: AppState = data, action: AppAction): AppState {
         ...state,
         tree: deepCopy<AsarNode>(prevTree)
       }
+    }
+    case ActionType.CLICK_LIST: {
+      const node = action.value
+      const prevTree = state.tree
+      Asar.each(prevTree, (n) => {
+        n._focused = false
+        if (n === node) {
+          n._focused = true
+        }
+      })
+      return {
+        ...state,
+        tree: deepCopy<AsarNode>(prevTree)
+      }
+    }
     case ActionType.CLEAR_TREE:
       return {
         ...state,
