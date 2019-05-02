@@ -2,12 +2,15 @@ import './file-list.css'
 
 import * as React from 'react'
 import generateObjectID from '../common/id'
+import { AppState, AppAction, ListItem } from './store'
+import { Dispatch } from 'redux'
+import { connect } from 'react-redux'
+import { basename } from 'path'
 
 interface Props {
-  data?: AsarNode
-  cdDotDot?: boolean
-  onItemClicked?: (node: AsarNode | null) => void
-  onItemDoubleClicked?: (node: AsarNode | null) => void
+  onItemClicked?: (node: ListItem | null) => void
+  onItemDoubleClicked?: (node: ListItem | null) => void
+  list?: ListItem[]
 }
 
 interface States {
@@ -18,69 +21,27 @@ interface States {
 
 class FileList extends React.Component<Props, States> {
   render () {
-    const data = this.props.data || null
+    const data = this.props.list || []
 
-    const folderItem = []
-    const fileItem = []
+    const ListBody: JSX.Element[] = []
 
-    if (this.props.cdDotDot) {
-      folderItem.push(
-        <FileListItem
-          className={this.state.cdDotDotFocused ? 'focused' : ''}
-          onClick={this._onListItemClicked}
-          onDoubleClick={this.props.onItemDoubleClicked}
-          key={generateObjectID()}
-          columns={[{
-            className: 'name-column cell',
-            style: { width: this.state.nameWidth + 'px' },
-            text: '..'
-          }, {
-            className: 'size-column cell',
-            style: { width: `calc(100% - ${this.state.nameWidth}px)` }
-          }]} />
-      )
-    }
-
-    if (data && data.files) {
-      for (let name in data.files) {
-        let className = data.files[name]._focused ? 'focused' : undefined
-        if (data.files[name].files) {
-          folderItem.push(
-            <FileListItem
-              className={className}
-              onClick={this._onListItemClicked}
-              onDoubleClick={this.props.onItemDoubleClicked}
-              key={generateObjectID()}
-              data={data.files[name]}
-              columns={[{
-                className: 'name-column cell',
-                style: { width: this.state.nameWidth + 'px' },
-                text: name
-              }, {
-                className: 'size-column cell',
-                style: { width: `calc(100% - ${this.state.nameWidth}px)` }
-              }]} />
-          )
-        } else {
-          fileItem.push(
-            <FileListItem
-              className={className}
-              onClick={this._onListItemClicked}
-              onDoubleClick={this.props.onItemDoubleClicked}
-              key={generateObjectID()}
-              data={data.files[name]}
-              columns={[{
-                className: 'name-column cell',
-                style: { width: this.state.nameWidth + 'px' },
-                text: name
-              }, {
-                className: 'size-column cell',
-                style: { width: `calc(100% - ${this.state.nameWidth}px)` },
-                text: data.files[name].size || NaN
-              }]} />
-          )
-        }
-      }
+    for (let i = 0; i < data.length; i++) {
+      const item = data[i]
+      ListBody.push(<FileListItem
+        className={item.focused ? 'focused' : ''}
+        onDoubleClick={this.props.onItemDoubleClicked}
+        onClick={this.props.onItemClicked}
+        key={item.path}
+        data={item}
+        columns={[{
+          className: 'name-column cell',
+          style: { width: this.state.nameWidth + 'px' },
+          text: item.path === '..' ? '..' : basename(item.path)
+        }, {
+          className: 'size-column cell',
+          style: { width: `calc(100% - ${this.state.nameWidth}px)` },
+          text: item.node ? item.node.size : ''
+        }]} />)
     }
 
     const rootClass = ['file-list']
@@ -102,23 +63,14 @@ class FileList extends React.Component<Props, States> {
             text: 'Size (Byte)'
           }]} />
         <div className='body'>
-          {[...folderItem, ...fileItem]}
+          {ListBody}
         </div>
         <div className='resize' style={{ left: `${this.state.nameWidth - 4}px` }} onMouseDown={this._onMouseDown}></div>
       </div>
     )
   }
 
-  private _onListItemClicked (node: AsarNode | null) {
-    if (!node) {
-      this.setState({
-        cdDotDotFocused: true
-      })
-    } else {
-      this.setState({
-        cdDotDotFocused: false
-      })
-    }
+  private _onListItemClicked (node: ListItem | null) {
     this.props.onItemClicked && this.props.onItemClicked(node)
   }
 
@@ -178,12 +130,15 @@ interface FileListItemProps {
     style?: any
     text?: string | number
   }[]
-  data?: AsarNode
-  onClick?: (node: AsarNode | null) => void
-  onDoubleClick?: (node: AsarNode | null) => void
+  data?: ListItem
+  onClick?: (item: ListItem | null) => void
+  onDoubleClick?: (item: ListItem | null) => void
 }
 
 class FileListItem extends React.Component<FileListItemProps> {
+  static clickTime: number = -1
+  static clickItemPath: string = ''
+
   render () {
     const className = this.props.className || ''
     const columns = this.props.columns || []
@@ -196,7 +151,7 @@ class FileListItem extends React.Component<FileListItemProps> {
     const columnDom = columns.map(c => (<div className={c.className} style={c.style} key={generateObjectID()}>{c.text}</div>))
 
     return (
-      <div className={classList.join(' ')} onClick={this._onClick} onDoubleClick={this._onDoubleClick}>
+      <div className={classList.join(' ')} onClick={this._onClick}>
         {columnDom}
       </div>
     )
@@ -206,18 +161,34 @@ class FileListItem extends React.Component<FileListItemProps> {
     super(props)
 
     this._onClick = this._onClick.bind(this)
-    this._onDoubleClick = this._onDoubleClick.bind(this)
   }
 
   private _onClick (_e: React.MouseEvent) {
-    const data = this.props.data || null
+    const data = this.props.data as ListItem
     this.props.onClick && this.props.onClick(data)
-  }
 
-  private _onDoubleClick (_e: React.MouseEvent) {
-    const data = this.props.data || null
-    this.props.onDoubleClick && this.props.onDoubleClick(data)
+    if (FileListItem.clickTime === -1) {
+      FileListItem.clickTime = Date.now()
+      FileListItem.clickItemPath = data.path
+    } else {
+
+      if (Date.now() - FileListItem.clickTime <= 300 && data.path === FileListItem.clickItemPath) {
+        FileListItem.clickTime = -1
+        FileListItem.clickItemPath = ''
+        this.props.onDoubleClick && this.props.onDoubleClick(data)
+      } else {
+        FileListItem.clickTime = Date.now()
+        FileListItem.clickItemPath = data.path
+      }
+    }
   }
 }
 
-export default FileList
+export default connect(
+  (state: AppState) => ({
+    list: state.list
+  }),
+  (dispatch: Dispatch<AppAction>, _ownProps: Props) => ({
+    dispatch
+  })
+)(FileList)

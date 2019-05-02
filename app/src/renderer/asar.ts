@@ -35,6 +35,7 @@ export default class Asar {
     let p = join(...path)
 
     if (p[0] === '/' || p[0] === '\\') p = p.substring(1)
+    if (p === '' || p === '.') return node || null
 
     const paths = p.split(sep)
     let pointer = node.files

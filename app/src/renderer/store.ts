@@ -1,10 +1,20 @@
 import { createStore, Action } from 'redux'
 import Asar from './asar'
 import { deepCopy } from './util'
+import { join, dirname } from 'path'
+
+export interface ListItem {
+  node: AsarNode | null
+  path: string
+  focused?: boolean
+}
 
 export interface AppState {
-  asarPath: string,
+  asarPath: string
   tree: AsarNode
+  list: ListItem[]
+  controllDown: boolean
+  shiftDown: boolean
 }
 
 export enum ActionType {
@@ -12,7 +22,10 @@ export enum ActionType {
   SET_TREE,
   CLICK_TREE,
   CLICK_LIST,
-  CLEAR_TREE
+  DOUBLE_CLICK_LIST,
+  CLEAR_TREE,
+  CONTROL,
+  SHIFT
 }
 
 export interface AppAction<T = any> extends Action<ActionType> {
@@ -21,7 +34,10 @@ export interface AppAction<T = any> extends Action<ActionType> {
 
 const data: AppState = {
   asarPath: '',
-  tree: { files: {} }
+  tree: { files: {} },
+  list: [],
+  controllDown: false,
+  shiftDown: false
 }
 
 export function setAsarPath (value: string): AppAction<string> {
@@ -45,9 +61,16 @@ export function clickTree (value: AsarNode): AppAction<AsarNode> {
   }
 }
 
-export function clickList (value: AsarNode | null): AppAction<AsarNode | null> {
+export function clickList (value: ListItem | null): AppAction<ListItem | null> {
   return {
     type: ActionType.CLICK_LIST,
+    value
+  }
+}
+
+export function doubleClickList (value: ListItem | null): AppAction<ListItem | null> {
+  return {
+    type: ActionType.DOUBLE_CLICK_LIST,
     value
   }
 }
@@ -58,60 +81,165 @@ export function clearTree (): AppAction<void> {
   }
 }
 
-function reducer (state: AppState = data, action: AppAction): AppState {
-  switch (action.type) {
-    case ActionType.SET_ASAR_PATH:
-      return {
-        ...state,
-        asarPath: action.value
-      }
-    case ActionType.SET_TREE:
-      return {
-        ...state,
-        tree: action.value
-      }
-    case ActionType.CLICK_TREE: {
-      const node = action.value
-      const prevTree = state.tree
-      Asar.each(prevTree, (n) => {
-        n._active = false
-        n._focused = false
-        if (n === node) {
-          if (n.files) {
-            n._open = !n._open
-          }
-          n._active = true
-        }
-      })
-      return {
-        ...state,
-        tree: deepCopy<AsarNode>(prevTree)
-      }
-    }
-    case ActionType.CLICK_LIST: {
-      const node = action.value
-      const prevTree = state.tree
-      Asar.each(prevTree, (n) => {
-        n._focused = false
-        if (n === node) {
-          n._focused = true
-        }
-      })
-      return {
-        ...state,
-        tree: deepCopy<AsarNode>(prevTree)
-      }
-    }
-    case ActionType.CLEAR_TREE:
-      return {
-        ...state,
-        tree: { files: {} }
-      }
-    default:
-      return state
+export function control (value: boolean): AppAction<boolean> {
+  return {
+    type: ActionType.CONTROL,
+    value
+  }
+}
+
+export function shift (value: boolean): AppAction<boolean> {
+  return {
+    type: ActionType.SHIFT,
+    value
   }
 }
 
 const store = createStore(reducer)
 
 export default store
+
+function _clickTree (node: AsarNode, tree: AsarNode, fold: boolean = false) {
+  const folders: ListItem[] = []
+  const files: ListItem[] = []
+
+  Asar.each(tree, (n, path) => {
+    n._active = false
+    if (n === node) {
+      if (n.files) {
+        if (fold) {
+          n._open = !n._open
+        } else {
+          if (!n._open) n._open = true
+        }
+
+        if (path !== '/') {
+          folders.push({
+            node: null,
+            path: '..',
+            focused: false
+          })
+        }
+
+        for (let name in n.files) {
+          if (n.files[name].files) {
+            folders.push({
+              node: n.files[name],
+              path: join(path, name).replace(/\\/g, '/'),
+              focused: false
+            })
+          } else {
+            files.push({
+              node: n.files[name],
+              path: join(path, name).replace(/\\/g, '/'),
+              focused: false
+            })
+          }
+        }
+      }
+      n._active = true
+    }
+  }, '/')
+
+  return {
+    list: [...folders, ...files],
+    tree
+  }
+}
+
+function reducer (state: AppState = data, action: AppAction): AppState {
+  switch (action.type) {
+    case ActionType.SET_ASAR_PATH:
+      return {
+        ...state,
+        list: [],
+        tree: { files: {} },
+        asarPath: action.value
+      }
+    case ActionType.SET_TREE:
+      return {
+        ...state,
+        list: [],
+        tree: action.value
+      }
+    case ActionType.CLICK_TREE: {
+      const { tree, list } = _clickTree(action.value, state.tree, true)
+
+      return {
+        ...state,
+        list,
+        tree: deepCopy<AsarNode>(tree)
+      }
+    }
+    case ActionType.CLICK_LIST: {
+      const listItem = action.value
+      for (let i = 0; i < state.list.length; i++) {
+        if (state.list[i] === listItem) {
+          state.list[i].focused = true
+        } else {
+          state.list[i].focused = false
+        }
+      }
+
+      return {
+        ...state,
+        list: deepCopy<ListItem[]>(state.list)
+      }
+    }
+    case ActionType.CLEAR_TREE:
+      return {
+        ...state,
+        list: [],
+        tree: { files: {} }
+      }
+    case ActionType.DOUBLE_CLICK_LIST:
+      const listItem = action.value
+      let currentDir = ''
+      Asar.each(state.tree, (n, path) => {
+        if (n._active) {
+          currentDir = path
+          return true
+        }
+        return false
+      }, '/')
+
+      if (!listItem.node) {
+
+        console.log(currentDir)
+        console.log(dirname(currentDir))
+        currentDir = dirname(currentDir).replace(/\\/g, '/')
+        const cdNode = Asar.getNode(state.tree, currentDir)
+        if (!cdNode) return state
+        const { tree, list } = _clickTree(cdNode, state.tree)
+        return {
+          ...state,
+          list,
+          tree: deepCopy<AsarNode>(tree)
+        }
+      } else if (listItem.node.files) {
+        currentDir = listItem.path
+        const cdNode = Asar.getNode(state.tree, currentDir)
+        if (!cdNode) return state
+        const { tree, list } = _clickTree(cdNode, state.tree)
+        return {
+          ...state,
+          list,
+          tree: deepCopy<AsarNode>(tree)
+        }
+      } else {
+        return state
+      }
+    case ActionType.CONTROL:
+      return {
+        ...state,
+        controllDown: action.value
+      }
+    case ActionType.SHIFT:
+      return {
+        ...state,
+        shiftDown: action.value
+      }
+    default:
+      return state
+  }
+}
