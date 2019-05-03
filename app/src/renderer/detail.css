@@ -7,6 +7,8 @@
 .tree-view {
   flex: 1;
   background-color: rgb(243, 243, 243);
+  height: 100%;
+  overflow: auto;
 }
 
 .list-view {

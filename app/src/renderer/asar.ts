@@ -1,10 +1,12 @@
 import { getClass } from './sync'
 import { join, sep } from 'path'
 
-export default class Asar {
+const Api: Api = getClass('Api')
 
-  private _header: AsarNode = { files: {} }
-  private _src: string = ''
+export default class Asar implements IAsar {
+  public header: AsarNode = { files: {} }
+  public src: string = ''
+  public headerSize: number = 0
 
   constructor (src?: string) {
     if (src) {
@@ -13,21 +15,24 @@ export default class Asar {
   }
 
   public load (src: string): void {
-    this._src = src
-    if (this._src) {
-      const Api: Api = getClass('Api')
-      const api = new Api()
-      this._header = api.readAsarHeaderSync(this._src)
-      api.destroy()
+    this.src = src
+    if (this.src) {
+      const res = Api.readAsarHeaderSync(this.src)
+      this.header = res.header
+      this.headerSize = res.headerSize
     }
   }
 
+  public extractItems (filenames: string | string[], dest: string, onData?: (info: any) => void): Promise<void> {
+    return Api.extractAsarItem(this, filenames, dest, onData)
+  }
+
   public getNode (...path: string[]): AsarNode | null {
-    return Asar.getNode(this._header, ...path)
+    return Asar.getNode(this.header, ...path)
   }
 
   public each (callback: (node: AsarNode, path: string) => boolean | void, path: string = ''): void {
-    return Asar.each(this._header, callback, path)
+    return Asar.each(this.header, callback, path)
   }
 
   public static getNode (node: AsarNode, ...path: string[]): AsarNode | null {
@@ -59,9 +64,5 @@ export default class Asar {
         }
       }
     }
-  }
-
-  public get header (): AsarNode {
-    return this._header
   }
 }

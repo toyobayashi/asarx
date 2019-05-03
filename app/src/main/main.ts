@@ -4,6 +4,7 @@ declare module 'electron' {
   }
 }
 
+import 'electron-function-ipc/main'
 import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeImage } from 'electron'
 import { format } from 'url'
 import { join } from 'path'

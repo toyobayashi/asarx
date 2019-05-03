@@ -7,10 +7,14 @@ import { Dispatch } from 'redux'
 import Asar from './asar'
 import Tree from './Tree'
 import FileList from './FileList'
+import { remote } from 'electron'
+import { basename } from 'path'
+import { getClass } from './sync'
 
 interface Props extends RouteComponentProps {
   asarPath?: string
   tree?: AsarNode
+  list?: ListItem[]
   dispatch?: Dispatch<AppAction>
 
   setAsarPath? (path: string): AppAction<string>
@@ -35,11 +39,12 @@ class Detail extends React.Component<Props, State> {
       <div className='full-screen'>
         <div style={{ height: '29px', borderBottom: '1px solid #333' }}>
           <button onClick={() => history.goBack()}>back</button>
+          <button onClick={this._extractClicked}>extract</button>
           {location.pathname}, {this.props.asarPath}, {this._activePath}
         </div>
         <div className='content'>
           <div className='tree-view'>
-            <Tree data={this.props.tree} title={this.props.asarPath} hideFile={true} onItemClicked={this._onItemClicked} />
+            <Tree data={this.props.tree} title={basename(this.props.asarPath || '')} hideFile={true} onItemClicked={this._onItemClicked} />
           </div>
           <div className='list-view' onClick={this._clearListFocus}>
             <FileList onItemClicked={this._onListItemClicked} onItemDoubleClicked={this._onListItemDoubleClicked} />
@@ -48,6 +53,27 @@ class Detail extends React.Component<Props, State> {
         </div>
       </div>
     )
+  }
+
+  private _extractClicked (_e: React.MouseEvent) {
+    if (!this.props.list) return
+    const selected = this.props.list.filter((item) => item.focused)
+    remote.dialog.showOpenDialog({
+      properties: ['openDirectory', 'showHiddenFiles', 'createDirectory', 'promptToCreate']
+    }, async (paths) => {
+      const dest = paths && paths[0]
+      if (!dest) return
+      console.log((getClass('Api') as Api).mkdirsSync(dest))
+      if (selected.length) {
+        await this._asar.extractItems(selected.map((item) => item.path), dest, function (info) {
+          console.log(info)
+        })
+      } else {
+        await this._asar.extractItems(this._activePath, dest, function (info) {
+          console.log(info)
+        })
+      }
+    })
   }
 
   private _clearListFocus (_e: React.MouseEvent) {
@@ -103,6 +129,7 @@ class Detail extends React.Component<Props, State> {
     this._onKeyDown = this._onKeyDown.bind(this)
     this._onKeyUp = this._onKeyUp.bind(this)
     this._clearListFocus = this._clearListFocus.bind(this)
+    this._extractClicked = this._extractClicked.bind(this)
   }
 
   private _onKeyDown (e: KeyboardEvent) {
@@ -180,7 +207,8 @@ class Detail extends React.Component<Props, State> {
 export default withRouter(connect(
   (state: AppState) => ({
     asarPath: state.asarPath,
-    tree: state.tree
+    tree: state.tree,
+    list: state.list
   }),
   (dispatch: Dispatch<AppAction>, _ownProps: Props) => ({
     dispatch,

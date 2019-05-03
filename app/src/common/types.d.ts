@@ -33,13 +33,15 @@ declare type IPCCallFailed = {
 declare type IPCCallResult<T = any> = IPCCallSuccess<T> | IPCCallFailed
 
 declare interface Api {
-  new (): {
-    test: number
-    readAsarHeader (path: string): Promise<AsarNode>
-    readAsarHeaderSync (path: string): AsarNode
-    destroy (): void
-  }
+  readAsarHeader (path: string): Promise<{ headerSize: number; header: AsarNode }>
+  readAsarHeaderSync (path: string): { headerSize: number; header: AsarNode }
+  extractAsarItem (asar: IAsar, filenames: string | string[], dest: string, onData?: (info: any) => void): Promise<void>
+  mkdirsSync (path: string): string | null
+}
 
-  readAsarHeader (path: string): Promise<AsarNode>
-  readAsarHeaderSync (path: string): AsarNode
+declare interface IAsar {
+  src: string
+  header: AsarNode
+  headerSize: number
+  fd?: number
 }
