@@ -69,7 +69,7 @@ class Detail extends React.Component<Props, State> {
           console.log(info)
         })
       } else {
-        await this._asar.extractItems(this._activePath, dest, function (info) {
+        await this._asar.extractItems('/', dest, function (info) {
           console.log(info)
         })
       }

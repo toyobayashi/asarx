@@ -5,10 +5,10 @@ declare module 'electron' {
 }
 
 import 'electron-function-ipc/main'
-import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeImage } from 'electron'
+import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeImage, dialog, ipcMain, WebContents } from 'electron'
 import { format } from 'url'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { join, extname } from 'path'
+import { existsSync } from 'original-fs'
 
 import initIpc from './ipc'
 
@@ -49,7 +49,7 @@ async function createWindow () {
 
   mainWindow = new BrowserWindow(browerWindowOptions)
 
-  mainWindow.on('ready-to-show', function () {
+  ipcMain.once('ready-to-show', function () {
     if (!mainWindow) return
     mainWindow.show()
     mainWindow.focus()
@@ -58,6 +58,27 @@ async function createWindow () {
 
   mainWindow.on('closed', function () {
     mainWindow = null
+  })
+
+  mainWindow.webContents.on('did-finish-load', function (this: WebContents, _e: Event) {
+    const args = process.argv.slice(1).filter(arg => !arg.startsWith('-'))
+    let readyToShow = false
+    for (let i = 0; i < args.length; i++) {
+      console.log(args[i])
+      if (extname(args[i]) === '.asar') {
+        if (existsSync(args[i])) {
+          this.send('open-asar', args[i])
+        } else {
+          dialog.showErrorBox('Error', `File not found: ${args[i]}`)
+          this.send('open-asar', '')
+        }
+        readyToShow = true
+        break
+      }
+    }
+    if (!readyToShow) {
+      this.send('open-asar', '')
+    }
   })
 
   if (process.env.NODE_ENV !== 'production') {
