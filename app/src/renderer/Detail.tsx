@@ -10,6 +10,7 @@ import FileList from './FileList'
 import { remote } from 'electron'
 import { basename } from 'path'
 import { getClass } from './sync'
+import * as os from 'os'
 
 interface Props extends RouteComponentProps {
   asarPath?: string
@@ -29,6 +30,8 @@ interface Props extends RouteComponentProps {
 
 interface State {}
 
+const Api: Api = getClass('Api')
+
 class Detail extends React.Component<Props, State> {
   private _asar: Asar = new Asar()
 
@@ -46,6 +49,7 @@ class Detail extends React.Component<Props, State> {
           <button className='menu-button'>Open</button>
           <button className='menu-button' onClick={() => history.goBack()}>Close</button>
           <button className='menu-button' onClick={this._extractClicked}>Extract</button>
+          <button className='menu-button' onClick={this._openAboutDialog}>About</button>
         </div>
         <div className='content'>
           <div className='tree-view'>
@@ -64,6 +68,53 @@ class Detail extends React.Component<Props, State> {
     )
   }
 
+  private _openAboutDialog (_e: React.MouseEvent) {
+    const isSnap = process.platform === 'linux' && process.env.SNAP && process.env.SNAP_REVISION
+    const pkg: any = Api.getPackageSync()
+
+    let detail: string = ''
+    let commit: string = 'Unknown'
+    let date: string = 'Unknown'
+
+    if (process.env.NODE_ENV === 'production') {
+      commit = pkg._commit || 'Unknown'
+      date = pkg._commitDate || 'Unknown'
+    } else {
+      const { execSync } = require('child_process')
+      try {
+        commit = execSync('git rev-parse HEAD').toString().replace(/[\r\n]/g, '')
+        date = new Date(execSync('git log -1').toString().match(/Date:\s*(.*?)\n/)[1]).toISOString()
+      } catch (_err) {
+        console.warn('Git not found in environment')
+      }
+    }
+
+    detail = `Version: ${pkg.version}\n` +
+      `Commit: ${commit}\n` +
+      `Date: ${date}\n` +
+      `Electron: ${process.versions['electron']}\n` +
+      `Chrome: ${process.versions['chrome']}\n` +
+      `Node.js: ${process.versions['node']}\n` +
+      `V8: ${process.versions['v8']}\n` +
+      `OS: ${os.type()} ${os.arch()} ${os.release()}${isSnap ? ' snap' : ''}`
+
+    const buttons = process.platform === 'linux' ? ['Copy', 'OK'] : ['OK', 'Copy']
+
+    remote.dialog.showMessageBox({
+      title: pkg.name,
+      type: 'info',
+      message: pkg.name,
+      detail: `\n${detail}`,
+      buttons,
+      noLink: true,
+      defaultId: buttons.indexOf('OK')
+    }, (response) => {
+      if (buttons[response] === 'Copy') {
+        remote.clipboard.writeText(detail)
+      }
+    })
+  }
+
   private _extractClicked (_e: React.MouseEvent) {
     if (!this.props.list) return
     const selected = this.props.list.filter((item) => item.focused)
@@ -72,7 +123,7 @@ class Detail extends React.Component<Props, State> {
     }, async (paths) => {
       const dest = paths && paths[0]
       if (!dest) return
-      console.log((getClass('Api') as Api).mkdirsSync(dest))
+      console.log(Api.mkdirsSync(dest))
       if (selected.length) {
         await this._asar.extractItems(selected.map((item) => item.path), dest, function (info) {
           console.log(info)

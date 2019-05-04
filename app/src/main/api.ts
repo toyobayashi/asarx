@@ -1,10 +1,17 @@
 import { openSync, closeSync, readSync, createReadStream, createWriteStream, close, existsSync, statSync, symlink } from 'original-fs'
+import { readFileSync } from 'fs'
 import { join, sep, basename, dirname } from 'path'
 import * as mkdirp from 'mkdirp'
 
 const { createFromBuffer } = require('chromium-pickle-js')
 
+const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'))
+
 class Api {
+  public static getPackageSync (): any {
+    return pkg
+  }
+
   public static readAsarHeaderSync (path: string): { headerSize: number; header: AsarNode } {
     const fd = openSync(path, 'r')
     let headerSizeBuffer = Buffer.alloc(8, 0)

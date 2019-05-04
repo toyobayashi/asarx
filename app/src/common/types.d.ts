@@ -37,6 +37,7 @@ declare interface Api {
   readAsarHeaderSync (path: string): { headerSize: number; header: AsarNode }
   extractAsarItem (asar: IAsar, filenames: string | string[], dest: string, onData?: (info: any) => void): Promise<void>
   mkdirsSync (path: string): string | null
+  getPackageSync (): any
 }
 
 declare interface IAsar {
