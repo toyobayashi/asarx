@@ -192,11 +192,18 @@ function reducer (state: AppState = data, action: AppAction): AppState {
             if (i <= end && i >= start) state.list[i].focused = true
             else state.list[i].focused = false
           }
+        } else {
+          for (let i = 0; i < state.list.length; i++) {
+            if (state.list[i] === listItem) {
+              state.list[i].focused = true
+              lastClickedItemIndex = i
+            }
+          }
         }
       } else if (state.controllDown) {
         for (let i = 0; i < state.list.length; i++) {
           if (state.list[i] === listItem) {
-            state.list[i].focused = true
+            state.list[i].focused = !state.list[i].focused
             lastClickedItemIndex = i
           }
         }

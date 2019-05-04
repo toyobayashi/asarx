@@ -33,14 +33,19 @@ class Detail extends React.Component<Props, State> {
   private _asar: Asar = new Asar()
 
   render () {
-    const { location, history } = this.props
+    const { history } = this.props
 
     return (
       <div className='full-screen'>
-        <div style={{ height: '29px', borderBottom: '1px solid #333' }}>
+        {/* <div style={{ height: '29px', borderBottom: '1px solid #333' }}>
           <button onClick={() => history.goBack()}>back</button>
           <button onClick={this._extractClicked}>extract</button>
           {location.pathname}, {this.props.asarPath}, {this._activePath}
+        </div> */}
+        <div className='menu'>
+          <button className='menu-button'>Open</button>
+          <button className='menu-button' onClick={() => history.goBack()}>Close</button>
+          <button className='menu-button' onClick={this._extractClicked}>Extract</button>
         </div>
         <div className='content'>
           <div className='tree-view'>
@@ -50,6 +55,10 @@ class Detail extends React.Component<Props, State> {
             <FileList onItemClicked={this._onListItemClicked} onItemDoubleClicked={this._onListItemDoubleClicked} />
             {/* <pre style={{ width: '100%',wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{JSON.stringify(this.props.tree, null, 2)}</pre> */}
           </div>
+        </div>
+        <div className='footer'>
+          <span>{this._activePath}</span>
+          <span>{this._asarDetailString}</span>
         </div>
       </div>
     )
@@ -103,6 +112,19 @@ class Detail extends React.Component<Props, State> {
   //   })
   //   return res
   // }
+
+  private get _asarDetailString (): string {
+    let folders: number = 0
+    let files: number = 0
+    Asar.each(this.props.tree as AsarNode, (n) => {
+      if (n.files) {
+        folders++
+      } else {
+        files++
+      }
+    })
+    return `Files: ${files}, Folders: ${folders}`
+  }
 
   private _onItemClicked (node: AsarNode | null) {
     if (node) {

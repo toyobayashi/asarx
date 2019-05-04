@@ -1,7 +1,7 @@
 .content {
   display: flex;
   justify-content: space-between;
-  height: calc(100% - 30px);
+  height: calc(100% - 70px);
 }
 
 .tree-view {
@@ -9,9 +9,54 @@
   background-color: rgb(243, 243, 243);
   height: 100%;
   overflow: auto;
+  box-sizing: border-box;
+  border: 1px solid #fff;
 }
 
 .list-view {
   flex: 3;
   overflow: auto;
+  box-sizing: border-box;
+  border: 1px solid #fff;
+}
+
+.menu {
+  width: 100%;
+  height: 40px;
+  background: linear-gradient(45deg, rgb(0, 120, 215), rgb(93, 169,228));
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+  box-sizing: border-box;
+  border-top: 1px solid rgb(204, 204, 204);
+  border-bottom: 1px solid rgb(204, 204, 204);
+}
+
+.menu .menu-button {
+  outline: none;
+  background: transparent;
+  border: none;
+  color: #fff;
+  width: 70px;
+  transition: background .2s;
+}
+
+.menu .menu-button:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.menu .menu-button:active {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.footer {
+  height: 29px;
+  line-height: 29px;
+  width: 100%;
+  background: rgb(240, 240, 240);
+  border-top: 1px solid rgb(204, 204, 204);
+  padding: 0 5px 0 5px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
 }
