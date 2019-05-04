@@ -6,6 +6,7 @@ import { AppState, AppAction, ListItem } from './store'
 import { Dispatch } from 'redux'
 import { connect } from 'react-redux'
 import { basename } from 'path'
+import { formatSize } from './util'
 
 interface Props {
   onItemClicked?: (node: ListItem | null) => void
@@ -40,7 +41,7 @@ class FileList extends React.Component<Props, States> {
         }, {
           className: 'size-column cell',
           style: { width: `calc(100% - ${this.state.nameWidth}px)` },
-          text: item.node ? item.node.size : ''
+          text: item.node && typeof item.node.size === 'number' ? formatSize(item.node.size) : ''
         }]} />)
     }
 
@@ -60,7 +61,7 @@ class FileList extends React.Component<Props, States> {
           }, {
             className: 'size-column cell',
             style: { width: `calc(100% - ${this.state.nameWidth}px)` },
-            text: 'Size (Byte)'
+            text: 'Size'
           }]} />
         <div className='body'>
           {ListBody}

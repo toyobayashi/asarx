@@ -5,6 +5,8 @@ import { join, dirname } from 'path'
 import { getClass } from './sync'
 
 const Api: Api = getClass('Api')
+const pkg = Api.getPackageSync()
+const htmlTitle = document.getElementsByTagName('title')[0]
 
 export interface ListItem {
   node: AsarNode | null
@@ -161,7 +163,9 @@ function reducer (state: AppState = data, action: AppAction): AppState {
       try {
         if (action.value !== '') {
           size = Api.readFileSizeSync(action.value)
+          htmlTitle.innerHTML = pkg.name + ' - ' + action.value
         } else {
+          htmlTitle.innerHTML = pkg.name
           size = 0
         }
       } catch (_err) {
