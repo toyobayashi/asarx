@@ -38,6 +38,7 @@ declare interface Api {
   extractAsarItem (asar: IAsar, filenames: string | string[], dest: string, onData?: (info: any) => void): Promise<void>
   mkdirsSync (path: string): string | null
   getPackageSync (): any
+  readFileSizeSync (path: string): number
 }
 
 declare interface IAsar {

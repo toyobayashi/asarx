@@ -12,6 +12,10 @@ class Api {
     return pkg
   }
 
+  public static readFileSizeSync (path: string): number {
+    return statSync(path).size
+  }
+
   public static readAsarHeaderSync (path: string): { headerSize: number; header: AsarNode } {
     const fd = openSync(path, 'r')
     let headerSizeBuffer = Buffer.alloc(8, 0)

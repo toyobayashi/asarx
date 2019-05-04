@@ -8,12 +8,14 @@ import Asar from './asar'
 import Tree from './Tree'
 import FileList from './FileList'
 import { remote } from 'electron'
-import { basename } from 'path'
+import { basename, extname } from 'path'
 import { getClass } from './sync'
 import * as os from 'os'
+import { openFile, formatSize } from './util'
 
 interface Props extends RouteComponentProps {
   asarPath?: string
+  asarSize?: number
   tree?: AsarNode
   list?: ListItem[]
   dispatch?: Dispatch<AppAction>
@@ -36,8 +38,6 @@ class Detail extends React.Component<Props, State> {
   private _asar: Asar = new Asar()
 
   render () {
-    const { history } = this.props
-
     return (
       <div className='full-screen'>
         {/* <div style={{ height: '29px', borderBottom: '1px solid #333' }}>
@@ -46,8 +46,8 @@ class Detail extends React.Component<Props, State> {
           {location.pathname}, {this.props.asarPath}, {this._activePath}
         </div> */}
         <div className='menu'>
-          <button className='menu-button'>Open</button>
-          <button className='menu-button' onClick={() => history.goBack()}>Close</button>
+          <button className='menu-button' onClick={this._open}>Open</button>
+          <button className='menu-button' onClick={this._goback}>Close</button>
           <button className='menu-button' onClick={this._extractClicked}>Extract</button>
           <button className='menu-button' onClick={this._openAboutDialog}>About</button>
         </div>
@@ -66,6 +66,25 @@ class Detail extends React.Component<Props, State> {
         </div>
       </div>
     )
+  }
+
+  private _goback () {
+    this.props.history.goBack()
+  }
+
+  private async _open () {
+    const path = await openFile()
+    if (!path) return
+    if (extname(path) === '.asar') {
+      if (this.props.setAsarPath) {
+        this.props.setAsarPath(path)
+        this.readHeader()
+      } else {
+        alert('Redux error.')
+      }
+    } else {
+      alert('Not an asar file.')
+    }
   }
 
   private _openAboutDialog (_e: React.MouseEvent) {
@@ -174,7 +193,7 @@ class Detail extends React.Component<Props, State> {
         files++
       }
     })
-    return `Files: ${files}, Folders: ${folders}`
+    return `Files: ${files}, Folders: ${folders}, Size: ${formatSize(this.props.asarSize || 0) || 'Unknown'}`
   }
 
   private _onItemClicked (node: AsarNode | null) {
@@ -203,6 +222,8 @@ class Detail extends React.Component<Props, State> {
     this._onKeyUp = this._onKeyUp.bind(this)
     this._clearListFocus = this._clearListFocus.bind(this)
     this._extractClicked = this._extractClicked.bind(this)
+    this._open = this._open.bind(this)
+    this._goback = this._goback.bind(this)
   }
 
   private _onKeyDown (e: KeyboardEvent) {
@@ -281,7 +302,8 @@ export default withRouter(connect(
   (state: AppState) => ({
     asarPath: state.asarPath,
     tree: state.tree,
-    list: state.list
+    list: state.list,
+    asarSize: state.asarSize
   }),
   (dispatch: Dispatch<AppAction>, _ownProps: Props) => ({
     dispatch,

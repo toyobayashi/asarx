@@ -8,6 +8,7 @@
   line-height: 22px;
   color: #616161;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .tree-item:hover {

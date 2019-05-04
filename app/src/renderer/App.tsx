@@ -6,6 +6,7 @@ import { ipcRenderer, Event } from 'electron'
 import { setAsarPath, AppAction } from './store'
 import { Dispatch } from 'redux'
 import { connect } from 'react-redux'
+import { showWindow } from './util'
 
 interface Props extends RouteComponentProps {
   dispatch?: Dispatch<AppAction>
@@ -36,8 +37,10 @@ class App extends React.Component<Props, States> {
         if (asarPath) {
           this.props.setAsarPath && this.props.setAsarPath(asarPath)
           this.props.history.push('/detail')
+          setTimeout(showWindow, 0)
+        } else {
+          showWindow()
         }
-        ipcRenderer.send('ready-to-show')
       })
       App._listen = true
     }

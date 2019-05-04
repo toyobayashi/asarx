@@ -2,6 +2,9 @@ import { createStore, Action } from 'redux'
 import Asar from './asar'
 import { deepCopy } from './util'
 import { join, dirname } from 'path'
+import { getClass } from './sync'
+
+const Api: Api = getClass('Api')
 
 export interface ListItem {
   node: AsarNode | null
@@ -11,6 +14,7 @@ export interface ListItem {
 
 export interface AppState {
   asarPath: string
+  asarSize: number
   tree: AsarNode
   list: ListItem[]
   controllDown: boolean
@@ -36,6 +40,7 @@ let lastClickedItemIndex = -1
 
 const data: AppState = {
   asarPath: '',
+  asarSize: 0,
   tree: { files: {} },
   list: [],
   controllDown: false,
@@ -152,11 +157,22 @@ function _clickTree (node: AsarNode, tree: AsarNode, fold: boolean = false) {
 function reducer (state: AppState = data, action: AppAction): AppState {
   switch (action.type) {
     case ActionType.SET_ASAR_PATH:
+      let size: number
+      try {
+        if (action.value !== '') {
+          size = Api.readFileSizeSync(action.value)
+        } else {
+          size = 0
+        }
+      } catch (_err) {
+        size = 0
+      }
       return {
         ...state,
         list: [],
         tree: { files: {} },
-        asarPath: action.value
+        asarPath: action.value,
+        asarSize: size
       }
     case ActionType.SET_TREE:
       return {

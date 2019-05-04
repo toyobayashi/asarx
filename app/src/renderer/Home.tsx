@@ -1,11 +1,11 @@
 import './home.css'
-import { remote } from 'electron'
 import * as React from 'react'
 import { connect } from 'react-redux'
 import { AppAction, setAsarPath } from './store'
 import { Dispatch } from 'redux'
 import { withRouter, RouteComponentProps } from 'react-router-dom'
 import { extname } from 'path'
+import { openFile } from './util'
 
 interface Props extends RouteComponentProps {
   dispatch?: Dispatch<AppAction>
@@ -58,14 +58,11 @@ class Home extends React.Component<Props, States> {
     }
   }
 
-  open () {
-    remote.dialog.showOpenDialog({
-      properties: ['openFile', 'showHiddenFiles']
-    }, (filePaths) => {
-      if (filePaths && filePaths.length) {
-        this.goDetail(filePaths[0])
-      }
-    })
+  async open () {
+    const path = await openFile()
+    if (path) {
+      this.goDetail(path)
+    }
   }
 
   toggleDevtools () {
