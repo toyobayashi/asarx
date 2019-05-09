@@ -133,7 +133,8 @@ async function extractAsarItem (asar: IAsar, filename: string, dest: string, onD
                 onData({
                   filename: filename,
                   total: node.size,
-                  current: len
+                  current: len,
+                  size: chunk.length
                 })
               }
             })
@@ -187,7 +188,8 @@ async function extractAsarItem (asar: IAsar, filename: string, dest: string, onD
                 onData({
                   filename: filename,
                   total: node.size,
-                  current: len
+                  current: len,
+                  size: chunk.length
                 })
               }
             })

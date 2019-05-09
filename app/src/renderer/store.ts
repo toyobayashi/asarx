@@ -3,6 +3,8 @@ import Asar from './asar'
 import { deepCopy } from './util'
 import { join, dirname } from 'path'
 import { getClass } from './sync'
+import { ModalState, modalReducer } from './store-modal'
+import { ActionType } from './store-action'
 
 const Api: Api = getClass('Api')
 const pkg = Api.getPackageSync()
@@ -21,17 +23,7 @@ export interface AppState {
   list: ListItem[]
   controllDown: boolean
   shiftDown: boolean
-}
-
-export enum ActionType {
-  SET_ASAR_PATH,
-  SET_TREE,
-  CLICK_TREE,
-  CLICK_LIST,
-  DOUBLE_CLICK_LIST,
-  CLEAR_TREE,
-  CONTROL,
-  SHIFT
+  modal: ModalState
 }
 
 export interface AppAction<T = any> extends Action<ActionType> {
@@ -46,7 +38,14 @@ const data: AppState = {
   tree: { files: {} },
   list: [],
   controllDown: false,
-  shiftDown: false
+  shiftDown: false,
+  modal: {
+    show: false,
+    totalMax: 100,
+    totalPos: 0,
+    currentMax: 100,
+    currentPos: 0
+  }
 }
 
 export function setAsarPath (value: string): AppAction<string> {
@@ -295,6 +294,9 @@ function reducer (state: AppState = data, action: AppAction): AppState {
         shiftDown: action.value
       }
     default:
-      return state
+      return {
+        ...state,
+        modal: modalReducer(state.modal, action)
+      }
   }
 }

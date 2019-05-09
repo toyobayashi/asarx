@@ -7,11 +7,13 @@ import { Dispatch } from 'redux'
 import Asar from './asar'
 import Tree from './Tree'
 import FileList from './FileList'
+import ModalExtract from './ModalExtract'
 import { remote } from 'electron'
 import { basename, extname } from 'path'
 import { getClass } from './sync'
 import * as os from 'os'
 import { openFile, formatSize } from './util'
+import { toggleModal, ModalState, setModalData } from './store-modal'
 
 interface Props extends RouteComponentProps {
   asarPath?: string
@@ -19,6 +21,7 @@ interface Props extends RouteComponentProps {
   tree?: AsarNode
   list?: ListItem[]
   dispatch?: Dispatch<AppAction>
+  show?: boolean
 
   setAsarPath? (path: string): AppAction<string>
   setTree? (tree: AsarNode): AppAction<AsarNode>
@@ -28,6 +31,9 @@ interface Props extends RouteComponentProps {
   clearTree? (): AppAction<void>
   control? (v: boolean): AppAction<boolean>
   shift? (v: boolean): AppAction<boolean>
+
+  toggleModal? (v: boolean): AppAction<boolean>
+  setModalData? (v: ModalState): AppAction<ModalState>
 }
 
 interface State {}
@@ -64,6 +70,7 @@ class Detail extends React.Component<Props, State> {
           <span>{this._activePath}</span>
           <span>{this._asarDetailString}</span>
         </div>
+        {this.props.show ? <ModalExtract /> : void 0}
       </div>
     )
   }
@@ -143,14 +150,63 @@ class Detail extends React.Component<Props, State> {
       const dest = paths && paths[0]
       if (!dest) return
       console.log(Api.mkdirsSync(dest))
+      let totalMax: number = 0
+      let totalPos: number = 0
       if (selected.length) {
-        await this._asar.extractItems(selected.map((item) => item.path), dest, function (info) {
-          console.log(info)
+        selected.forEach((item) => {
+          totalMax += (item.node ? Asar.totalSize(item.node) : 0)
         })
+
+        try {
+          this.props.toggleModal && this.props.toggleModal(true)
+          let start = Date.now()
+          await this._asar.extractItems(selected.map((item) => item.path), dest, (info) => {
+            totalPos += info.size
+            const now = Date.now()
+            if (now - start >= 100) {
+              start = now
+              this.props.setModalData && this.props.setModalData({
+                totalMax: totalMax,
+                totalPos: totalPos,
+                currentMax: info.total,
+                currentPos: info.current,
+                text: info.filename
+              })
+            }
+          })
+          this.props.toggleModal && this.props.toggleModal(false)
+          remote.shell.openExternal(dest)
+        } catch (err) {
+          this.props.setModalData && this.props.setModalData({
+            text: err.message
+          })
+        }
       } else {
-        await this._asar.extractItems('/', dest, function (info) {
-          console.log(info)
-        })
+        totalMax += Asar.totalSize(this.props.tree || { files: {} })
+        try {
+          this.props.toggleModal && this.props.toggleModal(true)
+          let start = Date.now()
+          await this._asar.extractItems('/', dest, (info) => {
+            totalPos += info.size
+            const now = Date.now()
+            if (now - start >= 100) {
+              start = now
+              this.props.setModalData && this.props.setModalData({
+                totalMax: totalMax,
+                totalPos: totalPos,
+                currentMax: info.total,
+                currentPos: info.current,
+                text: info.filename
+              })
+            }
+          })
+          this.props.toggleModal && this.props.toggleModal(false)
+          remote.shell.openExternal(dest)
+        } catch (err) {
+          this.props.setModalData && this.props.setModalData({
+            text: err.message
+          })
+        }
       }
     })
   }
@@ -303,7 +359,8 @@ export default withRouter(connect(
     asarPath: state.asarPath,
     tree: state.tree,
     list: state.list,
-    asarSize: state.asarSize
+    asarSize: state.asarSize,
+    show: state.modal.show
   }),
   (dispatch: Dispatch<AppAction>, _ownProps: Props) => ({
     dispatch,
@@ -314,6 +371,9 @@ export default withRouter(connect(
     doubleClickList: (tree: ListItem | null) => dispatch(doubleClickList(tree)),
     clearTree: () => dispatch(clearTree()),
     control: (v: boolean) => dispatch(control(v)),
-    shift: (v: boolean) => dispatch(shift(v))
+    shift: (v: boolean) => dispatch(shift(v)),
+
+    toggleModal: (v: boolean) => dispatch(toggleModal(v)),
+    setModalData: (v: ModalState) => dispatch(setModalData(v))
   })
 )(Detail))

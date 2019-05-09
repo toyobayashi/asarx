@@ -18,6 +18,8 @@ async function createWindow () {
   const browerWindowOptions: BrowserWindowConstructorOptions = {
     width: 800,
     height: 600,
+    minWidth: 800,
+    minHeight: 600,
     show: false,
     webPreferences: {
       nodeIntegration: true

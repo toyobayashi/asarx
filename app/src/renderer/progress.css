@@ -1,0 +1,38 @@
+@keyframes progress-move {
+  from { left: -100px; }
+  to { left: 100%; }
+}
+@keyframes progress-move-infinity {
+  from { left: -127px; }
+  to { left: 100%; }
+}
+.progress {
+  position: relative;
+  width: 100%;
+  height: 25px;
+  border: 1px solid #bcbcbc;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.progress .progress-rest {
+  background-color: #e6e6e6;
+  height: 100%;
+  position: absolute;
+  right: 0;
+}
+
+.progress .slide {
+  animation: progress-move 2s infinite linear;
+  position: absolute;
+  width: 100px;
+  height: 100%;
+  background: linear-gradient(to right, #06b025 calc(50% - 40px), rgb(111, 224, 117) 50%, #06b025 calc(50% + 40px));
+}
+
+.progress .progress-infinity {
+  animation: progress-move-infinity 2.5s infinite linear;
+  background-color: #06b025;
+  width: 127px;
+  height: 100%;
+  position: absolute;
+}

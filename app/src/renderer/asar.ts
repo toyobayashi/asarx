@@ -65,4 +65,16 @@ export default class Asar implements IAsar {
       }
     }
   }
+
+  public static totalSize (node: AsarNode): number {
+    let res = 0
+    if (node.files) {
+      for (let name in node.files) {
+        res += Asar.totalSize(node.files[name])
+      }
+    } else {
+      res += (node.size || 0)
+    }
+    return res
+  }
 }
