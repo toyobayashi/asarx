@@ -11,6 +11,7 @@ import { formatSize } from './util'
 interface Props {
   onItemClicked?: (node: ListItem | null) => void
   onItemDoubleClicked?: (node: ListItem | null) => void
+  onDragStart?: (e: React.DragEvent) => void
   list?: ListItem[]
 }
 
@@ -32,6 +33,7 @@ class FileList extends React.Component<Props, States> {
         className={item.focused ? 'focused' : ''}
         onDoubleClick={this.props.onItemDoubleClicked}
         onClick={this.props.onItemClicked}
+        onDragStart={this.props.onDragStart}
         key={item.path}
         data={item}
         columns={[{
@@ -134,6 +136,7 @@ interface FileListItemProps {
   data?: ListItem
   onClick?: (item: ListItem | null) => void
   onDoubleClick?: (item: ListItem | null) => void
+  onDragStart?: (e: React.DragEvent) => void
 }
 
 class FileListItem extends React.Component<FileListItemProps> {
@@ -152,7 +155,7 @@ class FileListItem extends React.Component<FileListItemProps> {
     const columnDom = columns.map(c => (<div className={c.className} style={c.style} key={generateObjectID()}>{c.text}</div>))
 
     return (
-      <div className={classList.join(' ')} onClick={this._onClick}>
+      <div className={classList.join(' ')} onClick={this._onClick} draggable={false} onDragStart={this.props.onDragStart}>
         {columnDom}
       </div>
     )

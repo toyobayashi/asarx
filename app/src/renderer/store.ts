@@ -1,10 +1,14 @@
 import { createStore, Action } from 'redux'
 import Asar from './asar'
 import { deepCopy } from './util'
-import { join, dirname } from 'path'
+import { join, dirname, basename } from 'path'
 import { getClass } from './sync'
 import { ModalState, modalReducer } from './store-modal'
 import { ActionType } from './store-action'
+import { tmpdir } from 'os'
+import generateObjectId from '../common/id'
+import { remove } from 'fs-extra'
+import { remote } from 'electron'
 
 const Api: Api = getClass('Api')
 const pkg = Api.getPackageSync()
@@ -19,6 +23,7 @@ export interface ListItem {
 export interface AppState {
   asarPath: string
   asarSize: number
+  tmpDir: string
   tree: AsarNode
   list: ListItem[]
   controllDown: boolean
@@ -35,6 +40,7 @@ let lastClickedItemIndex = -1
 const data: AppState = {
   asarPath: '',
   asarSize: 0,
+  tmpDir: '',
   tree: { files: {} },
   list: [],
   controllDown: false,
@@ -76,7 +82,7 @@ export function clickList (value: ListItem | null): AppAction<ListItem | null> {
   }
 }
 
-export function doubleClickList (value: ListItem | null): AppAction<ListItem | null> {
+export function doubleClickList (value: { node: ListItem | null; asar?: IAsar }): AppAction<{ node: ListItem | null; asar?: IAsar }> {
   return {
     type: ActionType.DOUBLE_CLICK_LIST,
     value
@@ -159,23 +165,31 @@ function reducer (state: AppState = data, action: AppAction): AppState {
   switch (action.type) {
     case ActionType.SET_ASAR_PATH:
       let size: number
+      let tmpDir: string
       try {
         if (action.value !== '') {
           size = Api.readFileSizeSync(action.value)
           htmlTitle.innerHTML = pkg.name + ' - ' + action.value
+          tmpDir = join(tmpdir(), generateObjectId())
         } else {
           htmlTitle.innerHTML = pkg.name
           size = 0
+          tmpDir = ''
+          if (state.tmpDir) {
+            remove(state.tmpDir).catch(err => console.log(err))
+          }
         }
       } catch (_err) {
         size = 0
+        tmpDir = ''
       }
       return {
         ...state,
         list: [],
         tree: { files: {} },
         asarPath: action.value,
-        asarSize: size
+        asarSize: size,
+        tmpDir
       }
     case ActionType.SET_TREE:
       return {
@@ -249,7 +263,8 @@ function reducer (state: AppState = data, action: AppAction): AppState {
         tree: { files: {} }
       }
     case ActionType.DOUBLE_CLICK_LIST:
-      const listItem = action.value
+      const listItem = action.value.node
+      const asar = action.value.asar
       let currentDir = ''
       Asar.each(state.tree, (n, path) => {
         if (n._active) {
@@ -259,7 +274,7 @@ function reducer (state: AppState = data, action: AppAction): AppState {
         return false
       }, '/')
 
-      if (!listItem.node) {
+      if (!listItem.node) { // double click ..
         currentDir = dirname(currentDir).replace(/\\/g, '/')
         const cdNode = Asar.getNode(state.tree, currentDir)
         if (!cdNode) return state
@@ -270,7 +285,7 @@ function reducer (state: AppState = data, action: AppAction): AppState {
           list,
           tree: deepCopy<AsarNode>(tree)
         }
-      } else if (listItem.node.files) {
+      } else if (listItem.node.files) { // double click folder
         currentDir = listItem.path
         const cdNode = Asar.getNode(state.tree, currentDir)
         if (!cdNode) return state
@@ -280,7 +295,10 @@ function reducer (state: AppState = data, action: AppAction): AppState {
           list,
           tree: deepCopy<AsarNode>(tree)
         }
-      } else {
+      } else { // double click file
+        Api.extractAsarItem(asar, listItem.path, state.tmpDir).then(() => {
+          remote.shell.openItem(join(state.tmpDir, basename(listItem.path)))
+        }).catch(err => console.log(err))
         return state
       }
     case ActionType.CONTROL:

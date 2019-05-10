@@ -8,12 +8,12 @@ import Asar from './asar'
 import Tree from './Tree'
 import FileList from './FileList'
 import ModalExtract from './ModalExtract'
-import { remote } from 'electron'
+import { remote, ipcRenderer } from 'electron'
 import { basename, extname } from 'path'
 import { getClass } from './sync'
 import * as os from 'os'
 import { openFile, formatSize } from './util'
-import { toggleModal, ModalState, setModalData } from './store-modal'
+import { toggleModal, ModalState, setModalData, extractItem } from './store-modal'
 
 interface Props extends RouteComponentProps {
   asarPath?: string
@@ -27,7 +27,7 @@ interface Props extends RouteComponentProps {
   setTree? (tree: AsarNode): AppAction<AsarNode>
   clickTree? (tree: AsarNode): AppAction<AsarNode>
   clickList? (tree: ListItem | null): AppAction<ListItem | null>
-  doubleClickList? (tree: ListItem | null): AppAction<ListItem | null>
+  doubleClickList? (value: { node: ListItem | null; asar?: IAsar }): AppAction<{ node: ListItem | null; asar?: IAsar }>
   clearTree? (): AppAction<void>
   control? (v: boolean): AppAction<boolean>
   shift? (v: boolean): AppAction<boolean>
@@ -62,7 +62,7 @@ class Detail extends React.Component<Props, State> {
             <Tree data={this.props.tree} title={basename(this.props.asarPath || '')} hideFile={true} onItemClicked={this._onItemClicked} />
           </div>
           <div className='list-view' onClick={this._clearListFocus}>
-            <FileList onItemClicked={this._onListItemClicked} onItemDoubleClicked={this._onListItemDoubleClicked} />
+            <FileList onDragStart={this._onDragStart} onItemClicked={this._onListItemClicked} onItemDoubleClicked={this._onListItemDoubleClicked} />
             {/* <pre style={{ width: '100%',wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{JSON.stringify(this.props.tree, null, 2)}</pre> */}
           </div>
         </div>
@@ -141,73 +141,26 @@ class Detail extends React.Component<Props, State> {
     })
   }
 
+  private _onDragStart (e: React.DragEvent) {
+    e.preventDefault()
+    if (!this.props.list) return
+    const selected = this.props.list.filter((item) => item.focused)
+    ipcRenderer.send('start-drag', this._asar, selected)
+    // const callback = (ev: any) => {
+    //   console.log(ev)
+    //   document.removeEventListener('ondrop', callback)
+    // }
+
+    // document.addEventListener('ondrop', callback)
+  }
+
   private _extractClicked (_e: React.MouseEvent) {
     if (!this.props.list) return
     const selected = this.props.list.filter((item) => item.focused)
     remote.dialog.showOpenDialog({
       properties: ['openDirectory', 'showHiddenFiles', 'createDirectory', 'promptToCreate']
     }, async (paths) => {
-      const dest = paths && paths[0]
-      if (!dest) return
-      console.log(Api.mkdirsSync(dest))
-      let totalMax: number = 0
-      let totalPos: number = 0
-      if (selected.length) {
-        selected.forEach((item) => {
-          totalMax += (item.node ? Asar.totalSize(item.node) : 0)
-        })
-
-        try {
-          this.props.toggleModal && this.props.toggleModal(true)
-          let start = Date.now()
-          await this._asar.extractItems(selected.map((item) => item.path), dest, (info) => {
-            totalPos += info.size
-            const now = Date.now()
-            if (now - start >= 100) {
-              start = now
-              this.props.setModalData && this.props.setModalData({
-                totalMax: totalMax,
-                totalPos: totalPos,
-                currentMax: info.total,
-                currentPos: info.current,
-                text: info.filename
-              })
-            }
-          })
-          this.props.toggleModal && this.props.toggleModal(false)
-          remote.shell.openExternal(dest)
-        } catch (err) {
-          this.props.setModalData && this.props.setModalData({
-            text: err.message
-          })
-        }
-      } else {
-        totalMax += Asar.totalSize(this.props.tree || { files: {} })
-        try {
-          this.props.toggleModal && this.props.toggleModal(true)
-          let start = Date.now()
-          await this._asar.extractItems('/', dest, (info) => {
-            totalPos += info.size
-            const now = Date.now()
-            if (now - start >= 100) {
-              start = now
-              this.props.setModalData && this.props.setModalData({
-                totalMax: totalMax,
-                totalPos: totalPos,
-                currentMax: info.total,
-                currentPos: info.current,
-                text: info.filename
-              })
-            }
-          })
-          this.props.toggleModal && this.props.toggleModal(false)
-          remote.shell.openExternal(dest)
-        } catch (err) {
-          this.props.setModalData && this.props.setModalData({
-            text: err.message
-          })
-        }
-      }
+      await extractItem(this._asar, paths && paths[0], selected)
     })
   }
 
@@ -264,7 +217,7 @@ class Detail extends React.Component<Props, State> {
   }
 
   private _onListItemDoubleClicked (node: ListItem | null) {
-    this.props.doubleClickList && this.props.doubleClickList(node)
+    this.props.doubleClickList && this.props.doubleClickList({ asar: this._asar, node })
     console.log(node)
   }
 
@@ -274,6 +227,7 @@ class Detail extends React.Component<Props, State> {
     this._onItemClicked = this._onItemClicked.bind(this)
     this._onListItemClicked = this._onListItemClicked.bind(this)
     this._onListItemDoubleClicked = this._onListItemDoubleClicked.bind(this)
+    this._onDragStart = this._onDragStart.bind(this)
     this._onKeyDown = this._onKeyDown.bind(this)
     this._onKeyUp = this._onKeyUp.bind(this)
     this._clearListFocus = this._clearListFocus.bind(this)
@@ -368,7 +322,7 @@ export default withRouter(connect(
     setTree: (tree: AsarNode) => dispatch(setTree(tree)),
     clickTree: (tree: AsarNode) => dispatch(clickTree(tree)),
     clickList: (tree: ListItem | null) => dispatch(clickList(tree)),
-    doubleClickList: (tree: ListItem | null) => dispatch(doubleClickList(tree)),
+    doubleClickList: (value: { node: ListItem | null; asar?: IAsar }) => dispatch(doubleClickList(value)),
     clearTree: () => dispatch(clearTree()),
     control: (v: boolean) => dispatch(control(v)),
     shift: (v: boolean) => dispatch(shift(v)),

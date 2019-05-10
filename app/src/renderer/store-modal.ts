@@ -1,5 +1,10 @@
-import { AppAction } from './store'
+import store, { AppAction, ListItem } from './store'
 import { ActionType } from './store-action'
+import Asar from './asar'
+import { remote } from 'electron'
+import { getClass } from './sync'
+
+const Api: Api = getClass('Api')
 
 export interface ModalState {
   show?: boolean
@@ -47,5 +52,73 @@ export function modalReducer (state: ModalState = data, action: AppAction) {
       }
     default:
       return state
+  }
+}
+
+export async function extractItem (asar: Asar, dest: string, selected: ListItem[]) {
+  if (!dest) return
+  console.log(Api.mkdirsSync(dest))
+  let totalMax: number = 0
+  let totalPos: number = 0
+  if (selected.length) {
+    selected.forEach((item) => {
+      totalMax += (item.node ? Asar.totalSize(item.node) : 0)
+    })
+
+    try {
+      // this.props.toggleModal && this.props.toggleModal(true)
+      store.dispatch(toggleModal(true))
+      let start = Date.now()
+      await asar.extractItems(selected.map((item) => item.path), dest, (info) => {
+        totalPos += info.size
+        const now = Date.now()
+        if (now - start >= 100) {
+          start = now
+          store.dispatch(setModalData({
+            totalMax: totalMax,
+            totalPos: totalPos,
+            currentMax: info.total,
+            currentPos: info.current,
+            text: info.filename
+          }))
+        }
+      })
+      store.dispatch(toggleModal(false))
+      remote.shell.openExternal(dest)
+    } catch (err) {
+      store.dispatch(toggleModal(false))
+      remote.dialog.showErrorBox('Error', err.message)
+      // store.dispatch(setModalData({
+      //   text: err.message
+      // }))
+    }
+  } else {
+    totalMax += Asar.totalSize(store.getState().tree || { files: {} })
+    try {
+      store.dispatch(toggleModal(true))
+      let start = Date.now()
+      await asar.extractItems('/', dest, (info) => {
+        totalPos += info.size
+        const now = Date.now()
+        if (now - start >= 100) {
+          start = now
+          store.dispatch(setModalData({
+            totalMax: totalMax,
+            totalPos: totalPos,
+            currentMax: info.total,
+            currentPos: info.current,
+            text: info.filename
+          }))
+        }
+      })
+      store.dispatch(toggleModal(false))
+      remote.shell.openExternal(dest)
+    } catch (err) {
+      store.dispatch(toggleModal(false))
+      remote.dialog.showErrorBox('Error', err.message)
+      // store.dispatch(setModalData({
+      //   text: err.message
+      // }))
+    }
   }
 }
