@@ -36,7 +36,9 @@
 }
 
 .file-list .name-column {
-  text-align: left;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .file-list .size-column {
@@ -56,6 +58,26 @@
 .file-list .head .cell {
   height: 24px;
   line-height: 24px;
+}
+
+.file-list .name-column.cell.folder::before {
+  display: inline-block;
+  content: '';
+  height: 16px;
+  width: 16px;
+  margin-right: 5px;
+  /* padding: 3px 0; */
+  background-image: url(../../res/img/Folder_16x.svg);
+}
+
+.file-list .name-column.cell.file::before {
+  display: inline-block;
+  content: '';
+  height: 16px;
+  width: 16px;
+  margin-right: 5px;
+  /* padding: 3px 0; */
+  background-image: url(../../res/img/Document_16x.svg);
 }
 
 .file-list .resize {

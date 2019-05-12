@@ -72,8 +72,17 @@ class TreeItem extends React.Component<any, any> {
     const indent: number = this.props.indent || 0
 
     const className = ['tree-item']
+    const itemClassName = ['folder-icon']
     if (data._active) {
       className.push('active')
+    }
+
+    if (indent === 0) {
+      itemClassName.push('root')
+    }
+
+    if (data._open) {
+      itemClassName.push('open')
     }
 
     return (
@@ -81,7 +90,7 @@ class TreeItem extends React.Component<any, any> {
         onClick={this.onItemClicked}
         className={className.join(' ')}
         style={{ paddingLeft: indent ? indent + 'px' : void 0 }}
-      >{title}</div>
+      ><span className={itemClassName.join(' ')}></span><span>{title}</span></div>
     )
   }
 

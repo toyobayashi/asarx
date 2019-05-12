@@ -84,6 +84,15 @@ export const rendererConfig: Configuration = {
           'style-loader',
           'css-loader'
         ]
+      },
+      {
+        test: /\.svg$/,
+        use: [{
+          loader: 'url-loader',
+          options: {
+            name: `./${config.iconOutDir}/[name].[ext]`
+          }
+        }]
       }
     ]
   },

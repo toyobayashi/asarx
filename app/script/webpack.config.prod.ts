@@ -95,6 +95,15 @@ export const rendererConfig: Configuration = {
           MiniCssExtractPlugin.loader,
           'css-loader'
         ]
+      },
+      {
+        test: /\.svg$/,
+        use: [{
+          loader: 'url-loader',
+          options: {
+            name: `./${config.iconOutDir}/[name].[ext]`
+          }
+        }]
       }
     ]
   },

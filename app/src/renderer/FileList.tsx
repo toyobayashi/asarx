@@ -29,6 +29,12 @@ class FileList extends React.Component<Props, States> {
 
     for (let i = 0; i < data.length; i++) {
       const item = data[i]
+      const nameClass = ['name-column', 'cell']
+      if (!item.node || item.node.files) {
+        nameClass.push('folder')
+      } else {
+        nameClass.push('file')
+      }
       ListBody.push(<FileListItem
         className={item.focused ? 'focused' : ''}
         onDoubleClick={this.props.onItemDoubleClicked}
@@ -37,7 +43,7 @@ class FileList extends React.Component<Props, States> {
         key={item.path}
         data={item}
         columns={[{
-          className: 'name-column cell',
+          className: nameClass.join(' '),
           style: { width: this.state.nameWidth + 'px' },
           text: item.path === '..' ? '..' : basename(item.path)
         }, {

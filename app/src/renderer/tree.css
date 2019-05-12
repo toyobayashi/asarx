@@ -9,6 +9,10 @@
   color: #616161;
   cursor: pointer;
   white-space: nowrap;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .tree-item:hover {
@@ -18,4 +22,23 @@
 .tree-item.active, .tree-item.active:hover {
   background: #126ce1;
   color: #fff;
+}
+
+.tree-item .folder-icon {
+  height: 16px;
+  width: 16px;
+  margin-right: 5px;
+  background-image: url(../../res/img/Folder_16x.svg);
+}
+
+.tree-item .folder-icon.open {
+  background-image: url(../../res/img/FolderOpen_16x.svg);
+}
+
+.tree-item .folder-icon.root {
+  background-image: url(../../res/img/RootFolder_16x.svg);
+}
+
+.tree-item .folder-icon.root.open {
+  background-image: url(../../res/img/RootFolderOpen_16x.svg);
 }
