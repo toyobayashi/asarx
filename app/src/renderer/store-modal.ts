@@ -55,9 +55,9 @@ export function modalReducer (state: ModalState = data, action: AppAction) {
   }
 }
 
-export async function extractItem (asar: Asar, dest: string, selected: ListItem[]) {
+export async function extractItem (asar: Asar, dest: string, selected: ListItem[], open: boolean = false) {
   if (!dest) return
-  console.log(Api.mkdirsSync(dest))
+  Api.mkdirsSync(dest)
   let totalMax: number = 0
   let totalPos: number = 0
   if (selected.length) {
@@ -84,7 +84,7 @@ export async function extractItem (asar: Asar, dest: string, selected: ListItem[
         }
       })
       store.dispatch(toggleModal(false))
-      remote.shell.openExternal(dest)
+      if (open) remote.shell.openExternal(dest)
     } catch (err) {
       store.dispatch(toggleModal(false))
       remote.dialog.showErrorBox('Error', err.message)
@@ -112,7 +112,7 @@ export async function extractItem (asar: Asar, dest: string, selected: ListItem[
         }
       })
       store.dispatch(toggleModal(false))
-      remote.shell.openExternal(dest)
+      if (open) remote.shell.openExternal(dest)
     } catch (err) {
       store.dispatch(toggleModal(false))
       remote.dialog.showErrorBox('Error', err.message)

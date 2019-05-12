@@ -39,7 +39,7 @@ export function addClass (className: string, ClassConstructor: any) {
         }
         try {
           const res = objMap.get(oid)[methodName](...argv)
-          if (Object.prototype.toString.call(res) === '[object Promise]' || typeof res.then === 'function') {
+          if (Object.prototype.toString.call(res) === '[object Promise]' || (typeof res === 'object' && res !== null && typeof res.then === 'function')) {
             const p = res.then((value: any) => event.returnValue = createResult(null, value))
             if (typeof p.catch === 'function') {
               p.catch((err: Error) => event.returnValue = createResult(err))
@@ -58,7 +58,7 @@ export function addClass (className: string, ClassConstructor: any) {
         }
         try {
           const res = objMap.get(oid)[methodName](...argv)
-          if (Object.prototype.toString.call(res) === '[object Promise]' || typeof res.then === 'function') {
+          if (Object.prototype.toString.call(res) === '[object Promise]' || (typeof res === 'object' && res !== null && typeof res.then === 'function')) {
             const p = res.then((value: any) => event.sender.send(className + '#' + methodName, callId, createResult(null, value)))
             if (typeof p.catch === 'function') {
               p.catch((err: Error) => event.sender.send(className + '#' + methodName, callId, createResult(err)))
@@ -78,7 +78,7 @@ export function addClass (className: string, ClassConstructor: any) {
       if (methodName.endsWith('Sync')) {
         try {
           const res = ClassConstructor[methodName](...args)
-          if (Object.prototype.toString.call(res) === '[object Promise]' || typeof res.then === 'function') {
+          if (Object.prototype.toString.call(res) === '[object Promise]' || (typeof res === 'object' && res !== null && typeof res.then === 'function')) {
             const p = res.then((value: any) => event.returnValue = createResult(null, value))
             if (typeof p.catch === 'function') {
               p.catch((err: Error) => event.returnValue = createResult(err))
@@ -93,7 +93,7 @@ export function addClass (className: string, ClassConstructor: any) {
         const [callId, ...argv] = args
         try {
           const res = ClassConstructor[methodName](...argv)
-          if (Object.prototype.toString.call(res) === '[object Promise]' || typeof res.then === 'function') {
+          if (Object.prototype.toString.call(res) === '[object Promise]' || (typeof res === 'object' && res !== null && typeof res.then === 'function')) {
             const p = res.then((value: any) => event.sender.send(className + '$' + methodName, callId, createResult(null, value)))
             if (typeof p.catch === 'function') {
               p.catch((err: Error) => event.sender.send(className + '$' + methodName, callId, createResult(err)))

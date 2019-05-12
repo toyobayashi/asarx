@@ -1,13 +1,25 @@
 import { openSync, closeSync, readSync, createReadStream, createWriteStream, close, existsSync, statSync, symlink } from 'original-fs'
 import { readFileSync } from 'fs'
 import { join, sep, basename, dirname } from 'path'
-import * as mkdirp from 'mkdirp'
+import { remove, removeSync, mkdirsSync } from 'fs-extra'
 
 const { createFromBuffer } = require('chromium-pickle-js')
 
 const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'))
 
 class Api {
+  public static remove (dir: string) {
+    return remove(dir)
+  }
+
+  public static removeSync (dir: string) {
+    return removeSync(dir)
+  }
+
+  public static existsSync (path: string): boolean {
+    return existsSync(path)
+  }
+
   public static getPackageSync (): any {
     return pkg
   }
@@ -39,16 +51,8 @@ class Api {
     })
   }
 
-  public static mkdirsSync (path: string) {
-    if (existsSync(path)) {
-      if (statSync(path).isDirectory()) {
-        return path
-      } else {
-        return null
-      }
-    }
-
-    return mkdirp.sync(path)
+  public static mkdirsSync (dir: string): void {
+    mkdirsSync(dir)
   }
 
   public static async extractAsarItem (asar: IAsar, filenames: string | string[], dest: string, onData?: (info: any) => void): Promise<void> {
@@ -120,7 +124,7 @@ async function extractAsarItem (asar: IAsar, filename: string, dest: string, onD
     return fd
   } else {
     const target = join(dest, basename(filename))
-    if (!existsSync(dirname(target))) mkdirp.sync(dirname(target))
+    if (!existsSync(dirname(target))) mkdirsSync(dirname(target))
     if (node.unpacked) {
       return new Promise<number>((resolve, reject) => {
         let len = 0

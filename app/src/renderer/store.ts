@@ -1,14 +1,13 @@
 import { createStore, Action } from 'redux'
 import Asar from './asar'
 import { deepCopy } from './util'
-import { join, dirname, basename } from 'path'
+import { join, dirname } from 'path'
 import { getClass } from './sync'
 import { ModalState, modalReducer } from './store-modal'
 import { ActionType } from './store-action'
 import { tmpdir } from 'os'
 import generateObjectId from '../common/id'
-import { remove } from 'fs-extra'
-import { remote } from 'electron'
+// import { remote } from 'electron'
 
 const Api: Api = getClass('Api')
 const pkg = Api.getPackageSync()
@@ -176,7 +175,7 @@ function reducer (state: AppState = data, action: AppAction): AppState {
           size = 0
           tmpDir = ''
           if (state.tmpDir) {
-            remove(state.tmpDir).catch(err => console.log(err))
+            Api.remove(state.tmpDir).catch(err => console.log(err))
           }
         }
       } catch (_err) {
@@ -263,8 +262,8 @@ function reducer (state: AppState = data, action: AppAction): AppState {
         tree: { files: {} }
       }
     case ActionType.DOUBLE_CLICK_LIST:
-      const listItem = action.value.node
-      const asar = action.value.asar
+      const listItem = action.value.node as ListItem
+      // const asar = action.value.asar
       let currentDir = ''
       Asar.each(state.tree, (n, path) => {
         if (n._active) {
@@ -295,10 +294,7 @@ function reducer (state: AppState = data, action: AppAction): AppState {
           list,
           tree: deepCopy<AsarNode>(tree)
         }
-      } else { // double click file
-        Api.extractAsarItem(asar, listItem.path, state.tmpDir).then(() => {
-          remote.shell.openItem(join(state.tmpDir, basename(listItem.path)))
-        }).catch(err => console.log(err))
+      } else {
         return state
       }
     case ActionType.CONTROL:
@@ -318,3 +314,10 @@ function reducer (state: AppState = data, action: AppAction): AppState {
       }
   }
 }
+
+window.addEventListener('beforeunload', () => {
+  const tmpDir = store.getState().tmpDir
+  if (Api.existsSync(tmpDir)) {
+    Api.removeSync(tmpDir)
+  }
+})

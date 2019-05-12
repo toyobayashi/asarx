@@ -9,13 +9,14 @@ import Tree from './Tree'
 import FileList from './FileList'
 import ModalExtract from './ModalExtract'
 import { remote, ipcRenderer } from 'electron'
-import { basename, extname } from 'path'
+import { basename, extname, join, dirname } from 'path'
 import { getClass } from './sync'
 import * as os from 'os'
 import { openFile, formatSize } from './util'
 import { toggleModal, ModalState, setModalData, extractItem } from './store-modal'
 
 interface Props extends RouteComponentProps {
+  tmpDir?: string
   asarPath?: string
   asarSize?: number
   tree?: AsarNode
@@ -56,6 +57,7 @@ class Detail extends React.Component<Props, State> {
           <button className='menu-button' onClick={this._goback}>Close</button>
           <button className='menu-button' onClick={this._extractClicked}>Extract</button>
           <button className='menu-button' onClick={this._openAboutDialog}>About</button>
+          <button className='menu-button' onClick={this._openGithub}>Github</button>
         </div>
         <div className='content'>
           <div className='tree-view'>
@@ -92,6 +94,10 @@ class Detail extends React.Component<Props, State> {
     } else {
       alert('Not an asar file.')
     }
+  }
+
+  private _openGithub (_e: React.MouseEvent) {
+    remote.shell.openExternal('https://github.com/toyobayashi/asarx')
   }
 
   private _openAboutDialog (_e: React.MouseEvent) {
@@ -160,7 +166,7 @@ class Detail extends React.Component<Props, State> {
     remote.dialog.showOpenDialog({
       properties: ['openDirectory', 'showHiddenFiles', 'createDirectory', 'promptToCreate']
     }, async (paths) => {
-      await extractItem(this._asar, paths && paths[0], selected)
+      await extractItem(this._asar, paths && paths[0], selected, true)
     })
   }
 
@@ -216,9 +222,28 @@ class Detail extends React.Component<Props, State> {
     this.props.clickList && this.props.clickList(node)
   }
 
-  private _onListItemDoubleClicked (node: ListItem | null) {
-    this.props.doubleClickList && this.props.doubleClickList({ asar: this._asar, node })
-    console.log(node)
+  private _onListItemDoubleClicked (listItem: ListItem | null) {
+    this.props.doubleClickList && this.props.doubleClickList({ asar: this._asar, node: listItem })
+    console.log(listItem)
+
+    if (listItem && listItem.node && !listItem.node.files) {
+      const tmpDir = this.props.tmpDir || ''
+      const target = join(tmpDir, listItem.path)
+      if (Api.existsSync(target)) {
+        remote.shell.openItem(target)
+        return
+      }
+
+      let p: Promise<void>
+      const root = this.props.tree || { files: {} }
+      if (listItem.node.executable) {
+        p = extractItem(this._asar, tmpDir, [{ node: root, path: '/', focused: true }])
+      } else {
+        p = extractItem(this._asar, join(tmpDir, dirname(listItem.path)), [listItem])
+      }
+      p.then(() => remote.shell.openItem(target)).catch(err => console.log(err))
+    }
+
   }
 
   constructor (props: Props) {
@@ -310,6 +335,7 @@ class Detail extends React.Component<Props, State> {
 
 export default withRouter(connect(
   (state: AppState) => ({
+    tmpDir: state.tmpDir,
     asarPath: state.asarPath,
     tree: state.tree,
     list: state.list,
