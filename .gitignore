@@ -1,3 +1,4 @@
 node_modules/
 /app/out/
-/dist
+/dist/*
+!/dist/asarx.iss

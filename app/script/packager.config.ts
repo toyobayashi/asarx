@@ -27,6 +27,7 @@ export const productionPackage: ProductionPackage = {
   name: pkg.name,
   version: pkg.version,
   main: pkg.main,
+  // tslint:disable-next-line: strict-type-predicates
   author: typeof pkg.author === 'object' ? (pkg.author as any).name as string : pkg.author,
   license: pkg.license
 }

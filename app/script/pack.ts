@@ -3,11 +3,12 @@ import * as path from 'path'
 import * as fs from 'fs-extra'
 import * as archiver from 'archiver'
 import * as pkg from '../package.json'
-import { execSync } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import prod from './webpack.prod'
 import config from './config'
 
 import { productionPackage, packagerOptions, arch } from './packager.config'
+import getPath from './get-path'
 
 const { createPackageWithOptions } = require('asar')
 const chalk = require('chalk')
@@ -17,7 +18,13 @@ function bundleProductionCode () {
 }
 
 function packageApp () {
-  return packager(packagerOptions)
+  return packager(packagerOptions).then((appPaths) => {
+    if (process.platform === 'win32' && packagerOptions.icon) {
+      fs.mkdirsSync(path.join(appPaths[0], 'resources', 'win32'))
+      fs.copySync(packagerOptions.icon, path.join(appPaths[0], 'resources', 'win32',`${pkg.name}.ico`))
+    }
+    return appPaths
+  })
 }
 
 function writePackageJson (root: string) {
@@ -147,10 +154,32 @@ async function zipAsar (root: string) {
   fs.mkdirsSync(path.join(rootDotDot, '.tmp'))
   await Promise.all([
     fs.copy(path.join(rootDotDot, 'app.asar'), path.join(rootDotDot, '.tmp/app.asar')),
+    process.platform === 'win32' ? fs.copy(path.join(rootDotDot, 'win32'), path.join(rootDotDot, '.tmp/win32')) : Promise.resolve(),
     fs.existsSync(path.join(rootDotDot, 'app.asar.unpacked')) ? fs.copy(path.join(rootDotDot, 'app.asar.unpacked'), path.join(rootDotDot, '.tmp/app.asar.unpacked')) : Promise.resolve()
   ])
   await zip(path.join(rootDotDot, '.tmp'), path.join(config.distPath, `resources-v${productionPackage.version}-${process.platform}-${arch}.zip`))
   fs.removeSync(path.join(rootDotDot, '.tmp'))
+}
+
+function inno (sourceDir: string) {
+  return new Promise<void>((resolve, reject) => {
+    const def: any = {
+      Name: pkg.name,
+      Version: pkg.version,
+      Publisher: pkg.author,
+      URL: 'https://github.com/toyobayashi/asarx',
+      AppId: '{{A69871B5-F7D5-47B1-8871-2FAB121C29DB}',
+      OutputDir: getPath('..', 'dist'),
+      Arch: arch,
+      RepoDir: getPath('..'),
+      SourceDir: sourceDir,
+      ArchitecturesAllowed: arch === 'ia32' ? '' : 'x64',
+      ArchitecturesInstallIn64BitMode: arch === 'ia32' ? '' : 'x64'
+    }
+    spawn('ISCC.exe', [...Object.keys(def).map(k => `/D${k}=${def[k]}`), getPath('..', 'dist', 'asarx.iss')], { stdio: 'inherit' })
+      .on('error', reject)
+      .on('exit', resolve)
+  })
 }
 
 async function main () {
@@ -179,13 +208,22 @@ async function main () {
 
   console.log(chalk.greenBright(`[${new Date().toLocaleString()}] Zip ${newPath}...`))
   const size = await zipApp(newPath)
+  console.log(chalk.greenBright(`[${new Date().toLocaleString()}] Total size of zip: ${size} Bytes`))
 
   if (process.platform === 'linux') {
     console.log(chalk.greenBright(`[${new Date().toLocaleString()}] Create .deb installer...`))
     createDebInstaller(newPath)
   }
 
-  console.log(chalk.greenBright(`[${new Date().toLocaleString()}] Total size of zip: ${size} Bytes`))
+  if (process.platform === 'win32') {
+    console.log(chalk.greenBright(`[${new Date().toLocaleString()}] Create inno-setup installer...`))
+    try {
+      await inno(newPath)
+    } catch (err) {
+      console.log(chalk.yellowBright(`[${new Date().toLocaleString()}] ${err.message} `))
+    }
+  }
+
   return (new Date().getTime() - start) / 1000
 }
 
