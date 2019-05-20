@@ -12,7 +12,7 @@ AppUpdatesURL={#URL}
 DefaultGroupName={#Name}
 AllowNoIcons=yes
 OutputDir={#OutputDir}
-OutputBaseFilename={#Name}-v{#Version}-win32-{#Arch}
+OutputBaseFilename={#Name}-v{#Version}-win32-{#Arch}-setup
 Compression=lzma
 SolidCompression=yes
 SetupIconFile={#RepoDir}\app\res\icon\app.ico
@@ -34,13 +34,14 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "associatewithfiles"; Description: "Register .asar for supported file types"; GroupDescription: "Other:"; Flags: unchecked
+Name: "associatewithfiles"; Description: "Register .asar for supported file types"; GroupDescription: "Other:";
 
 [Files]
 Source: "*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#Name}"; Filename: "{app}\{#Name}.exe"; AppUserModelID: "{#AppUserId}"
+Name: "{group}\Uninstall"; Filename: "{app}\unins000.exe"; AppUserModelID: "{#AppUserId}"
 Name: "{autodesktop}\{#Name}"; Filename: "{app}\{#Name}.exe"; Tasks: desktopicon; AppUserModelID: "{#AppUserId}"
 
 [Run]
