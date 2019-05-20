@@ -37,7 +37,10 @@ interface Props extends RouteComponentProps {
   setModalData? (v: ModalState): AppAction<ModalState>
 }
 
-interface State {}
+interface State {
+  treeWidth: number
+  point: [number, number] | null
+}
 
 const Api: Api = getClass('Api')
 
@@ -45,6 +48,11 @@ class Detail extends React.Component<Props, State> {
   private _asar: Asar = new Asar()
 
   render () {
+    const contentClassList = ['content']
+    if (this.state.point) {
+      contentClassList.push('resize')
+    }
+
     return (
       <div className='full-screen'>
         {/* <div style={{ height: '29px', borderBottom: '1px solid #333' }}>
@@ -59,14 +67,15 @@ class Detail extends React.Component<Props, State> {
           <button className='menu-button' onClick={this._openAboutDialog}>About</button>
           <button className='menu-button' onClick={this._openGithub}>Github</button>
         </div>
-        <div className='content'>
-          <div className='tree-view'>
+        <div className={contentClassList.join(' ')} onMouseMove={this._onMouseMove} onMouseUp={this._onMouseUp}>
+          <div className='tree-view' style={{ width: this.state.treeWidth + 'px' }}>
             <Tree data={this.props.tree} title={basename(this.props.asarPath || '')} hideFile={true} onItemClicked={this._onItemClicked} />
           </div>
-          <div className='list-view' onClick={this._clearListFocus}>
+          <div className='list-view' style={{ width: `calc(100% - ${this.state.treeWidth}px)` }} onClick={this._clearListFocus}>
             <FileList onDragStart={this._onDragStart} onItemClicked={this._onListItemClicked} onItemDoubleClicked={this._onListItemDoubleClicked} />
             {/* <pre style={{ width: '100%',wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{JSON.stringify(this.props.tree, null, 2)}</pre> */}
           </div>
+          <div className='resize' style={{ left: `${this.state.treeWidth - 4}px` }} onMouseDown={this._onMouseDown}></div>
         </div>
         <div className='footer'>
           <span>{this._activePath}</span>
@@ -75,6 +84,39 @@ class Detail extends React.Component<Props, State> {
         {this.props.show ? <ModalExtract /> : void 0}
       </div>
     )
+  }
+
+  private _onMouseMove (e: React.MouseEvent) {
+    if (this.state.point) {
+      const x = e.pageX
+      let target: any = e.target
+      while (target && !target.classList.contains('content')) {
+        target = target.parentNode
+      }
+      if (!target) return
+      const targetLeft = target.offsetLeft as number
+      const left = this.state.point[0] - targetLeft
+      const newWidth = left + x - this.state.point[0]
+      this.setState({
+        treeWidth: newWidth < 100 ? 100 : (newWidth > 400 ? 400 : newWidth)
+      })
+    }
+  }
+
+  private _onMouseDown (e: React.MouseEvent) {
+    if (!this.state.point) {
+      this.setState({
+        point: [e.pageX, e.pageY]
+      })
+    }
+  }
+
+  private _onMouseUp (_e: React.MouseEvent) {
+    if (this.state.point) {
+      this.setState({
+        point: null
+      })
+    }
   }
 
   private _goback () {
@@ -249,6 +291,11 @@ class Detail extends React.Component<Props, State> {
   constructor (props: Props) {
     super(props)
 
+    this.state = {
+      treeWidth: 200,
+      point: null
+    }
+
     this._onItemClicked = this._onItemClicked.bind(this)
     this._onListItemClicked = this._onListItemClicked.bind(this)
     this._onListItemDoubleClicked = this._onListItemDoubleClicked.bind(this)
@@ -259,6 +306,9 @@ class Detail extends React.Component<Props, State> {
     this._extractClicked = this._extractClicked.bind(this)
     this._open = this._open.bind(this)
     this._goback = this._goback.bind(this)
+    this._onMouseMove = this._onMouseMove.bind(this)
+    this._onMouseDown = this._onMouseDown.bind(this)
+    this._onMouseUp = this._onMouseUp.bind(this)
   }
 
   private _onKeyDown (e: KeyboardEvent) {

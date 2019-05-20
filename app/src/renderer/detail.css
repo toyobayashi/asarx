@@ -4,8 +4,19 @@
   height: calc(100% - 70px);
 }
 
+.content.resize {
+  cursor: ew-resize;
+}
+
+.content > .resize {
+  width: 4px;
+  height: 100%;
+  position: absolute;
+  cursor: ew-resize;
+  top: 0;
+}
+
 .tree-view {
-  flex: 1;
   background-color: rgb(243, 243, 243);
   height: 100%;
   overflow: auto;
@@ -14,7 +25,6 @@
 }
 
 .list-view {
-  flex: 3;
   overflow: auto;
   box-sizing: border-box;
   border: 1px solid #fff;

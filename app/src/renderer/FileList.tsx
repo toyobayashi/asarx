@@ -106,14 +106,16 @@ class FileList extends React.Component<Props, States> {
         point: [e.pageX, e.pageY]
       })
     }
+    e.stopPropagation()
   }
 
-  private _onMouseUp (_e: React.MouseEvent) {
+  private _onMouseUp (e: React.MouseEvent) {
     if (this.state.point) {
       this.setState({
         point: null
       })
     }
+    e.stopPropagation()
   }
 
   constructor (props: Props) {

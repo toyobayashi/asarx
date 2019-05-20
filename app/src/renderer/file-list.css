@@ -35,11 +35,11 @@
   background: rgb(204, 232, 255);
 }
 
-.file-list .name-column {
+/* .file-list .name-column {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-}
+} */
 
 .file-list .size-column {
   text-align: right;
@@ -66,7 +66,7 @@
   height: 16px;
   width: 16px;
   margin-right: 5px;
-  /* padding: 3px 0; */
+  vertical-align: text-bottom;
   background-image: url(../../res/img/Folder_16x.svg);
 }
 
@@ -76,11 +76,11 @@
   height: 16px;
   width: 16px;
   margin-right: 5px;
-  /* padding: 3px 0; */
+  vertical-align: text-bottom;
   background-image: url(../../res/img/Document_16x.svg);
 }
 
-.file-list .resize {
+.file-list > .resize {
   width: 4px;
   height: 100%;
   position: absolute;
